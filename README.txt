@@ -1,4 +1,4 @@
-This is the official SMT-COMP 2011 benchmark scrambler for SMT-LIBv2 scripts. 
+This is the official SMT-COMP benchmark scrambler for SMT-LIB scripts.
 
 Its usage is as follows: 
 
