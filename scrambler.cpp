@@ -52,6 +52,8 @@ bool lift_named_annot = false;
 typedef std::tr1::unordered_map<std::string, std::string> NameMap;
 NameMap names;
 
+NameMap permuted_names;
+
 std::stack<NameMap*> shadow_undos;
 
 std::string make_name(int n)
@@ -492,7 +494,12 @@ void print_node(std::ostream &out, node *n, bool keep_annontations)
             out << '(';
         }
         if (!n->symbol.empty()) {
-            out << n->symbol;
+            NameMap::iterator it = permuted_names.find(n->symbol);
+            if (it != permuted_names.end()) {
+                out << it->second;
+            } else {
+                out << n->symbol;
+            }
         }
         if (!name.empty()) {
             out << " (!";
@@ -599,6 +606,26 @@ void print_scrambled(std::ostream &out, bool keep_annotations)
         } else {
             ++i;
         }
+    }
+
+    // This randomly permutes the top-level names only. A better
+    // implementation would permute all names, including those in
+    // local scopes (e.g., bound by a "let").
+
+    // Also, this has not been tested together with advanced scrambler
+    // features (e.g., benchmark unfolding, named annotations,
+    // incremental benchmarks).
+
+    // generate random name permutation, aka Knuth shuffle (note that
+    // index 0 is unused, and index name_idx is out of range)
+    int permutation[name_idx];
+    for (int i=1; i<name_idx; ++i) {
+        int j = 1 + next_rand_int(i);
+        permutation[i] = permutation[j];
+        permutation[j] = i;
+    }
+    for (int i=1; i<name_idx; ++i) {
+      permuted_names[make_name(i)] = make_name(permutation[i]);
     }
 
     for (size_t i = 0; i < commands.size(); ++i) {
