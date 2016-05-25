@@ -1,9 +1,10 @@
-/* -*- fundamental -*-                                                        
- *                                                                            
+/* -*- fundamental -*-
+ *
  * Flex-based lexical scanner for the SMT-LIB v2 command language
- *                                                                            
+ *
  * Author: Alberto Griggio <griggio@fbk.eu>
- *                                                                            
+ * Author: Tjark Weber <tjark.weber@it.uu.se>
+ *
  * Copyright (C) 2011 Alberto Griggio
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,7 +25,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-  
+
 %{
 
 #include "scrambler.h"
@@ -110,6 +111,7 @@ KEYWORD             :[a-zA-Z0-9._+\-*=%?!$_~&^<>@]+
 \"              { yylval.buf = new std::vector<char>();
                   BEGIN(START_STRING); }
 <START_STRING>{
+  \"\"          { yylval.buf->push_back('"'); }
   \\\"          { yylval.buf->push_back('"'); }
   [^\"\n]       { yylval.buf->push_back(yytext[0]); }
   \n            { yylval.buf->push_back('\n'); }
