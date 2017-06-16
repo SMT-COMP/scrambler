@@ -22,4 +22,4 @@ lexer.cpp: lexer.l
 	flex --header-file="lexer.h" -o $@ $<
 
 clean:
-	rm -f $(OBJECTS) lexer.cpp lexer.h parser.cpp parser.h scrambler
+	rm -f $(OBJECTS) lexer.cpp lexer.h parser.cpp parser.h parser.output scrambler
