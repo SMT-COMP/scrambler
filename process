@@ -1,0 +1,9 @@
+#!/bin/sh
+
+# This is a wrapper script that allows the scrambler to be used as a
+# preprocessor on StarExec.
+
+# $1: benchmark filename
+# $2: seed
+
+./scrambler -seed "$2" < "$1"
