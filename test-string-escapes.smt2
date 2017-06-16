@@ -13,6 +13,36 @@
 (set-info :echo """\")
 (set-info :echo """\\")
 (set-info :echo """\\\")
+(set-info :echo "
+")
+(set-info :echo "\
+")
+(set-info :echo "\\
+")
+(set-info :echo "\\\
+")
+(set-info :echo "
+\")
+(set-info :echo "
+\\")
+(set-info :echo "
+\\\")
+(set-info :echo """
+")
+(set-info :echo "
+""")
+(set-info :echo "\
+""")
+(set-info :echo "\\
+""")
+(set-info :echo "\\\
+""")
+(set-info :echo """
+\")
+(set-info :echo """
+\\")
+(set-info :echo """
+\\\")
 (set-logic ALL)
 (check-sat)
 (exit)
