@@ -112,9 +112,7 @@ KEYWORD             :[a-zA-Z0-9._+\-*=%?!$_~&^<>@]+
                   BEGIN(START_STRING); }
 <START_STRING>{
   \"\"          { yylval.buf->push_back('"'); }
-  \\\"          { yylval.buf->push_back('"'); }
-  [^\"\n]       { yylval.buf->push_back(yytext[0]); }
-  \n            { yylval.buf->push_back('\n'); }
+  [^\"]         { yylval.buf->push_back(yytext[0]); }
   \"            {
                   char *s;
                   yylval.buf->push_back('\0');
