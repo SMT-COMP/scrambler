@@ -116,7 +116,8 @@ bool logic_is_dl()
             std::string &logic = commands[0]->children[0]->symbol;
             logic_dl = (logic == "QF_IDL" ||
                         logic == "QF_RDL" ||
-                        logic == "QF_UFIDL") ? 1 : 0;
+                        logic == "QF_UFIDL" ||
+                        logic == "UFIDL") ? 1 : 0;
         }
     }
     return logic_dl == 1;
