@@ -2,7 +2,7 @@
  *
  * A simple scrambler for SMT-LIB v2 scripts
  *
- * Author: Tjark Weber <tjark.weber@it.uu.se> (2015)
+ * Author: Tjark Weber <tjark.weber@it.uu.se> (2015-2017)
  * Author: Alberto Griggio <griggio@fbk.eu>
  *
  * Copyright (C) 2011 Alberto Griggio
@@ -48,6 +48,16 @@ namespace {
 bool no_scramble = false;
 bool scramble_named_annot = false;
 bool lift_named_annot = false;
+
+/*
+ * If set to true the following modifications will be made additionally:
+ * 1. The following command will be prepended:
+ *    (set-option :produce-unsat-cores true)
+ * 2. A (get-unsat-core) command will be added after each (check-sat) command.
+ * 3. Each (assert fmla) will be replaced by (assert (! fmla) :named freshId)
+ *    where freshId is some fresh identifier.
+ */
+bool generate_unsat_core_benchmark = false;
 
 typedef std::tr1::unordered_map<std::string, std::string> NameMap;
 NameMap names;
@@ -502,6 +512,9 @@ void print_node(std::ostream &out, node *n, bool keep_annontations)
                 out << n->symbol;
             }
         }
+        if (generate_unsat_core_benchmark && n->symbol == "assert") {
+            name = make_annot_name(name_idx++);
+        }
         if (!name.empty()) {
             out << " (!";
         }
@@ -522,6 +535,10 @@ void print_node(std::ostream &out, node *n, bool keep_annontations)
         }
         if (n->needs_parens) {
             out << ')';
+        }
+        if (generate_unsat_core_benchmark && n->symbol == "check-sat") {
+            // append get-unsat-core after check-sat
+            out << std::endl << "(get-unsat-core)";
         }
     }
 }
@@ -722,7 +739,8 @@ void usage(const char *program)
               << "  -unfold_end N\n"
               << "  -core NAMES_FILE\n"
               << "  -scramble_named_annot [true|false]\n"
-              << "  -lift_named_annot [true|false]\n";
+              << "  -lift_named_annot [true|false]\n"
+              << "  -generate_unsat_core_benchmark [true|false]\n";
     std::cout.flush();
     exit(1);
 }
@@ -896,6 +914,15 @@ int main(int argc, char **argv)
                 usage(argv[0]);
             }
             i += 2;
+        } else if (strcmp(argv[i], "-generate_unsat_core_benchmark") == 0 && i+1 < argc) {
+            if (strcmp(argv[i+1], "true") == 0) {
+                generate_unsat_core_benchmark = true;
+            } else if (strcmp(argv[i+1], "false") == 0) {
+                generate_unsat_core_benchmark = false;
+            } else {
+                usage(argv[0]);
+            }
+            i += 2;
         } else {
             usage(argv[0]);
         }
@@ -909,6 +936,11 @@ int main(int argc, char **argv)
                       << std::endl;
             return 1;
         }
+    }
+
+    if (generate_unsat_core_benchmark) {
+        // prepend command that enables production of unsat-cores
+        std::cout << "(set-option :produce-unsat-cores true)" << std::endl;
     }
 
     while (!std::cin.eof()) {
