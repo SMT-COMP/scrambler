@@ -711,17 +711,17 @@ int main(int argc, char **argv)
     }
 
     if (generate_unsat_core_benchmark) {
-        // prepend command that enables production of unsat-cores
+        // prepend command that enables production of unsat cores
         std::cout << "(set-option :produce-unsat-cores true)" << std::endl;
     }
 
     while (!std::cin.eof()) {
         yyparse();
         if (!commands.empty() && commands.back()->symbol == "check-sat") {
-          if (create_core) {
-            filter_named(names);
-          }
-          print_scrambled(std::cout, keep_annotations);
+            if (create_core) {
+                filter_named(names);
+            }
+            print_scrambled(std::cout, keep_annotations);
         }
     }
 
