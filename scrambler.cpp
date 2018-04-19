@@ -433,10 +433,10 @@ std::string get_named_annot(node *root)
 }
 
 
-void print_node(std::ostream &out, node *n, bool keep_annontations)
+void print_node(std::ostream &out, node *n, bool keep_annotations)
 {
-    if (!no_scramble && !keep_annontations && n->symbol == "!") {
-        print_node(out, n->children[0], keep_annontations);
+    if (!no_scramble && !keep_annotations && n->symbol == "!") {
+        print_node(out, n->children[0], keep_annotations);
     } else {
         if (n->needs_parens) {
             out << '(';
@@ -460,7 +460,7 @@ void print_node(std::ostream &out, node *n, bool keep_annontations)
             if (i > 0 || !n->symbol.empty()) {
                 out << ' ';
             }
-            print_node(out, n->children[i], keep_annontations);
+            print_node(out, n->children[i], keep_annotations);
         }
         if (!name.empty()) {
             out << " :named " << name << ")";
@@ -476,9 +476,9 @@ void print_node(std::ostream &out, node *n, bool keep_annontations)
 }
 
 
-void print_command(std::ostream &out, node *n, bool keep_annontations)
+void print_command(std::ostream &out, node *n, bool keep_annotations)
 {
-    print_node(out, n, keep_annontations);
+    print_node(out, n, keep_annotations);
     out << std::endl;
 }
 
@@ -728,7 +728,6 @@ int main(int argc, char **argv)
     if (create_core) {
         filter_named(names);
     }
-
     if (!commands.empty()) {
         print_scrambled(std::cout, keep_annotations);
     }
