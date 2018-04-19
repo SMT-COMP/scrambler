@@ -1,9 +1,9 @@
 /* -*- C++ -*-
  *
- * A simple scrambler for SMT-LIB v2 scripts
+ * A simple scrambler for SMT-LIB 2.6 scripts
  *
  * Author: Tjark Weber <tjark.weber@it.uu.se> (2015-2017)
- * Author: Alberto Griggio <griggio@fbk.eu>
+ * Author: Alberto Griggio <griggio@fbk.eu> (2011)
  *
  * Copyright (C) 2011 Alberto Griggio
  *
@@ -631,8 +631,7 @@ void print_scrambled(std::ostream &out, bool keep_annotations)
     // local scopes (e.g., bound by a "let").
 
     // Also, this has not been tested together with advanced scrambler
-    // features (e.g., benchmark unfolding, named annotations,
-    // incremental benchmarks).
+    // features (e.g., named annotations, incremental benchmarks).
 
     // generate random name permutation, aka Knuth shuffle (note that
     // index 0 is unused, and index name_idx is out of range)
@@ -654,89 +653,12 @@ void print_scrambled(std::ostream &out, bool keep_annotations)
 }
 
 
-void print_unfolded(const std::string &unfold_pattern, bool keep_annotations,
-                    int unfold_start, int unfold_end)
-{
-    // unfold the incremental benchmark into a list of individual benchmarks
-    size_t num_queries = 0;
-    for (size_t i = 0; i < commands.size(); ++i) {
-        if (commands[i]->symbol == "check-sat") {
-            ++num_queries;
-        }
-    }
-    std::cout << "Unfolding " << num_queries
-              << " queries into individual scripts..." << std::endl;
-    std::vector<int> idx;
-    std::ostringstream tmpname;
-    tmpname << num_queries;
-    size_t w = tmpname.str().length();
-    for (size_t i = 1; i <= num_queries; ++i) {
-        if (unfold_start >= 0 && i < unfold_start) {
-            continue;
-        }
-        if (unfold_end >= 0 && i > unfold_end) {
-            continue;
-        }
-
-        idx.clear();
-        tmpname.str("");
-        tmpname << unfold_pattern << "."
-                << std::setfill('0') << std::setw(w) << i << ".smt2";
-        std::string fn = tmpname.str();
-
-        // print out all the commands in the scope of the current query
-        for (size_t j = 0, n = 0; j < commands.size(); ++j) {
-            if (commands[j]->symbol == "check-sat") {
-                ++n;
-                if (n == i) {
-                    idx.push_back(j);
-                    std::ofstream out(fn.c_str());
-                    for (size_t k = 0; k < idx.size(); ++k) {
-                        if (idx[k] >= 0) {
-                            print_command(out, commands[idx[k]],
-                                          keep_annotations);
-                        }
-                    }
-                    std::cout << "Written " << fn << std::endl;
-                    break; // process next query
-                }
-            } else {
-                if (commands[j]->symbol == "push") {
-                    int howmany =
-                        atoi(commands[j]->children[0]->symbol.c_str());
-                    while (howmany-- > 0) {
-                        idx.push_back(-1);
-                    }
-                } else if (commands[j]->symbol == "pop") {
-                    int howmany =
-                        atoi(commands[j]->children[0]->symbol.c_str());
-                    while (howmany-- > 0) {
-                        while (!idx.empty()) {
-                            int n = idx.back();
-                            idx.pop_back();
-                            if (n == -1) {
-                                break;
-                            }
-                        }
-                    }
-                } else {
-                    idx.push_back(j);
-                }
-            }
-        }
-    }
-}
-
-
 void usage(const char *program)
 {
     std::cout << "Syntax: " << program << " [options] < input_file.smt2\n"
               << "where options are:\n"
               << "  -term_annot [true|false]\n"
               << "  -seed n (if 0, no scrambling is performed)\n"
-              << "  -unfold PATTERN\n"
-              << "  -unfold_start N\n"
-              << "  -unfold_end N\n"
               << "  -core NAMES_FILE\n"
               << "  -scramble_named_annot [true|false]\n"
               << "  -lift_named_annot [true|false]\n"
@@ -833,10 +755,6 @@ using namespace scrambler;
 int main(int argc, char **argv)
 {
     bool keep_annotations = true;
-    bool unfold = false;
-    std::string unfold_pattern;
-    int unfold_start = -1;
-    int unfold_end = -1;
     bool create_core = false;
     std::string core_file;
 
@@ -863,28 +781,6 @@ int main(int argc, char **argv)
                 keep_annotations = 1;
             } else if (strcmp(argv[i+1], "false") == 0) {
                 keep_annotations = 0;
-            } else {
-                usage(argv[0]);
-            }
-            i += 2;
-        } else if (strcmp(argv[i], "-unfold") == 0 && i+1 < argc) {
-            unfold_pattern = argv[i+1];
-            unfold = true;
-            i += 2;
-        } else if (strcmp(argv[i], "-unfold_start") == 0 && i+1 < argc) {
-            std::istringstream s(argv[i+1]);
-            int x;
-            if (s >> x && x >= 0) {
-                unfold_start = x;
-            } else {
-                usage(argv[0]);
-            }
-            i += 2;
-        } else if (strcmp(argv[i], "-unfold_end") == 0 && i+1 < argc) {
-            std::istringstream s(argv[i+1]);
-            int x;
-            if (s >> x && x >= 0) {
-                unfold_end = x;
             } else {
                 usage(argv[0]);
             }
@@ -945,13 +841,11 @@ int main(int argc, char **argv)
 
     while (!std::cin.eof()) {
         yyparse();
-        if (!unfold) {
-            if (!commands.empty() && commands.back()->symbol == "check-sat") {
-                if (create_core) {
-                    filter_named(names);
-                }
-                print_scrambled(std::cout, keep_annotations);
-            }
+        if (!commands.empty() && commands.back()->symbol == "check-sat") {
+          if (create_core) {
+            filter_named(names);
+          }
+          print_scrambled(std::cout, keep_annotations);
         }
     }
 
@@ -959,13 +853,8 @@ int main(int argc, char **argv)
         filter_named(names);
     }
 
-    if (!unfold) {
-        if (!commands.empty()) {
-            print_scrambled(std::cout, keep_annotations);
-        }
-    } else {
-        print_unfolded(unfold_pattern, keep_annotations,
-                       unfold_start, unfold_end);
+    if (!commands.empty()) {
+      print_scrambled(std::cout, keep_annotations);
     }
 
     return 0;
