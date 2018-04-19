@@ -2,7 +2,7 @@
  *
  * A simple scrambler for SMT-LIB 2.6 scripts
  *
- * Author: Tjark Weber <tjark.weber@it.uu.se> (2015-2017)
+ * Author: Tjark Weber <tjark.weber@it.uu.se> (2015-2018)
  * Author: Alberto Griggio <griggio@fbk.eu> (2011)
  *
  * Copyright (C) 2011 Alberto Griggio
@@ -46,15 +46,13 @@ namespace scrambler {
 namespace {
 
 bool no_scramble = false;
-bool scramble_named_annot = false;
-bool lift_named_annot = false;
 
 /*
  * If set to true the following modifications will be made additionally:
  * 1. The following command will be prepended:
  *    (set-option :produce-unsat-cores true)
- * 2. A (get-unsat-core) command will be added after each (check-sat) command.
- * 3. Each (assert fmla) will be replaced by (assert (! fmla) :named freshId)
+ * 2. A (get-unsat-core) command will be inserted after each (check-sat) command.
+ * 3. Each (assert fmla) will be replaced by (assert (! fmla :named freshId))
  *    where freshId is some fresh identifier.
  */
 bool generate_unsat_core_benchmark = false;
@@ -81,8 +79,6 @@ uint64_t seed;
 const uint64_t a = 25214903917ULL;
 const uint64_t c = 11U;
 const uint64_t mask = ~(2ULL << 48);
-
-bool sort_commands = false;
 
 
 const char *unquote(const char *n)
@@ -398,37 +394,6 @@ std::string make_annot_name(int n)
     return tmp.str();
 }
 
-void set_named_annot(node *n)
-{
-    NameMap::iterator it = names.find(n->symbol);
-    if (it != names.end()) {
-        n->symbol = it->second;
-    } else {
-        std::string nn = make_annot_name(name_idx++);
-        names[n->symbol] = nn;
-        n->symbol = nn;
-    }
-}
-
-
-bool is_named_annot(node *n, node **out=NULL)
-{
-    if (n->symbol == "!" && n->children.size() >= 2) {
-        for (size_t j = 1; j < n->children.size(); ++j) {
-            node *attr = n->children[j];
-            if (attr->symbol == ":named" &&
-                !attr->children.empty()) {
-                if (out) {
-                    *out = attr;
-                }
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
-
 typedef std::tr1::unordered_set<std::string> StringSet;
 
 std::string get_named_annot(node *root)
@@ -473,34 +438,6 @@ void print_node(std::ostream &out, node *n, bool keep_annontations)
     if (!no_scramble && !keep_annontations && n->symbol == "!") {
         print_node(out, n->children[0], keep_annontations);
     } else {
-        std::string name;
-        if (lift_named_annot && keep_annontations) {
-            node *annot = NULL;
-            if (n->symbol == "assert") {
-                name = get_named_annot(n);
-                if (!name.empty()) {
-                    if (scramble_named_annot) {
-                        NameMap::iterator it = names.find(name);
-                        if (it != names.end()) {
-                            name = it->second;
-                        } else {
-                            std::string nn = make_annot_name(name_idx++);
-                            names[name] = nn;
-                            name = nn;
-                        }
-                    }
-                }
-            } else if (is_named_annot(n, &annot)) {
-                if (n->children.size() == 2) {
-                    n = n->children[0];
-                } else {
-                    n->children.erase(
-                        std::find(n->children.begin(), n->children.end(),
-                                  annot));
-                    del_node(annot);
-                }
-            }
-        }
         if (n->needs_parens) {
             out << '(';
         }
@@ -512,17 +449,12 @@ void print_node(std::ostream &out, node *n, bool keep_annontations)
                 out << n->symbol;
             }
         }
+        std::string name;
         if (generate_unsat_core_benchmark && n->symbol == "assert") {
             name = make_annot_name(name_idx++);
         }
         if (!name.empty()) {
             out << " (!";
-        }
-        if (scramble_named_annot && keep_annontations) {
-            node *annot;
-            if (is_named_annot(n, &annot)) {
-                set_named_annot(annot->children[0]);
-            }
         }
         for (size_t i = 0; i < n->children.size(); ++i) {
             if (i > 0 || !n->symbol.empty()) {
@@ -550,49 +482,9 @@ void print_command(std::ostream &out, node *n, bool keep_annontations)
     out << std::endl;
 }
 
-std::tr1::unordered_map<std::string, int> sort_priorities;
-void init_sort_priorities()
-{
-    sort_priorities["set-info"] = -1;
-    sort_priorities["set-logic"] = 1;
-    sort_priorities["declare-sort"] = 2;
-    sort_priorities["define-sort"] = 3;
-    sort_priorities["declare-fun"] = 4;
-    sort_priorities["define-sort"] = 5;
-    sort_priorities["define-fun"] = 6;
-    sort_priorities["assert"] = 7;
-    sort_priorities["check-sat"] = 8;
-    sort_priorities["get-unsat-core"] = 9;
-    sort_priorities["exit"] = 10;
-}
-
-bool commands_lt(node *a, node *b)
-{
-    if (a == b) {
-        return false;
-    }
-    int pa = sort_priorities[a->symbol];
-    int pb = sort_priorities[b->symbol];
-
-    assert(pa != 0);
-    assert(pb != 0);
-
-    return pa < pb;
-}
-
-void sort_command_list()
-{
-    if (sort_commands) {
-        init_sort_priorities();
-        std::stable_sort(commands.begin(), commands.end(), commands_lt);
-    }
-}
-
 
 void print_scrambled(std::ostream &out, bool keep_annotations)
 {
-    sort_command_list();
-
     // identify consecutive declarations and shuffle them
     for (size_t i = 0; i < commands.size(); ) {
         if (commands[i]->symbol == "declare-fun") {
@@ -655,14 +547,22 @@ void print_scrambled(std::ostream &out, bool keep_annotations)
 
 void usage(const char *program)
 {
-    std::cout << "Syntax: " << program << " [options] < input_file.smt2\n"
-              << "where options are:\n"
-              << "  -term_annot [true|false]\n"
-              << "  -seed n (if 0, no scrambling is performed)\n"
-              << "  -core NAMES_FILE\n"
-              << "  -scramble_named_annot [true|false]\n"
-              << "  -lift_named_annot [true|false]\n"
-              << "  -generate_unsat_core_benchmark [true|false]\n";
+    std::cout << "Syntax: " << program << " [OPTIONS] < INPUT_FILE.smt2\n"
+              << "\n"
+              << "    -term_annot [true|false]\n"
+              << "        controls whether term annotations are printed (default: true)\n"
+              << "\n"
+              << "    -seed N\n"
+              << "        seed value (>= 0) for pseudo-random choices; if 0, no scrambling is\n"
+              << "        performed (default: time(0))\n"
+              << "\n"
+              << "    -core FILE\n"
+              << "        print only those (named) assertions whose name is contained in the\n"
+              << "        specified FILE (default: print all assertions)\n"
+              << "\n"
+              << "    -generate_unsat_core_benchmark [true|false]\n"
+              << "        controls whether the output is in a format suitable for the unsat-core\n"
+              << "        track of SMT-COMP (default: false)\n";
     std::cout.flush();
     exit(1);
 }
@@ -676,11 +576,7 @@ void filter_named(const StringSet &to_keep)
         bool keep = true;
         if (cur->symbol == "assert") {
             std::string name = get_named_annot(cur);
-            // if (!name.empty()) {
-            //     std::cout << ";; found name: " << name << std::endl;
-            // }
             if (!name.empty() && to_keep.find(name) == to_keep.end()) {
-                // std::cout << ";;  removing name: " << name << std::endl;
                 keep = false;
             }
         }
@@ -755,6 +651,7 @@ using namespace scrambler;
 int main(int argc, char **argv)
 {
     bool keep_annotations = true;
+
     bool create_core = false;
     std::string core_file;
 
@@ -778,37 +675,16 @@ int main(int argc, char **argv)
             i += 2;
         } else if (strcmp(argv[i], "-term_annot") == 0 && i+1 < argc) {
             if (strcmp(argv[i+1], "true") == 0) {
-                keep_annotations = 1;
+                keep_annotations = true;
             } else if (strcmp(argv[i+1], "false") == 0) {
-                keep_annotations = 0;
+                keep_annotations = false;
             } else {
                 usage(argv[0]);
             }
             i += 2;
-        } else if (strcmp(argv[i], "-sort") == 0) {
-            sort_commands = true;
-            ++i;
         } else if (strcmp(argv[i], "-core") == 0 && i+1 < argc) {
             create_core = true;
             core_file = argv[i+1];
-            i += 2;
-        } else if (strcmp(argv[i], "-scramble_named_annot") == 0 && i+1 < argc){
-            if (strcmp(argv[i+1], "true") == 0) {
-                scramble_named_annot = true;
-            } else if (strcmp(argv[i+1], "false") == 0) {
-                scramble_named_annot = false;
-            } else {
-                usage(argv[0]);
-            }
-            i += 2;
-        } else if (strcmp(argv[i], "-lift_named_annot") == 0 && i+1 < argc) {
-            if (strcmp(argv[i+1], "true") == 0) {
-                lift_named_annot = true;
-            } else if (strcmp(argv[i+1], "false") == 0) {
-                lift_named_annot = false;
-            } else {
-                usage(argv[0]);
-            }
             i += 2;
         } else if (strcmp(argv[i], "-generate_unsat_core_benchmark") == 0 && i+1 < argc) {
             if (strcmp(argv[i+1], "true") == 0) {
@@ -854,7 +730,7 @@ int main(int argc, char **argv)
     }
 
     if (!commands.empty()) {
-      print_scrambled(std::cout, keep_annotations);
+        print_scrambled(std::cout, keep_annotations);
     }
 
     return 0;
