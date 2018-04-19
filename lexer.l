@@ -1,9 +1,9 @@
 /* -*- fundamental -*-
  *
- * Flex-based lexical scanner for the SMT-LIB v2 command language
+ * Flex-based lexical scanner for the SMT-LIB 2.6 command language
  *
- * Author: Alberto Griggio <griggio@fbk.eu>
- * Author: Tjark Weber <tjark.weber@it.uu.se>
+ * Author: Tjark Weber <tjark.weber@it.uu.se> (2015-2018)
+ * Author: Alberto Griggio <griggio@fbk.eu> (2011)
  *
  * Copyright (C) 2011 Alberto Griggio
  *
