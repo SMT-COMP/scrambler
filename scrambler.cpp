@@ -149,10 +149,12 @@ bool logic_is_dl()
             std::cerr << "ERROR logic has not been set" << std::endl;
             exit(1);
         }
-        logic_dl = (logic == "QF_IDL" ||
-                    logic == "QF_RDL" ||
-                    logic == "QF_UFIDL" ||
-                    logic == "UFIDL") ? 1 : 0;
+
+        if (logic.find("IDL") != std::string::npos || logic.find("RDL") != std::string::npos ) {
+            logic_dl = 1;
+        } else {
+            logic_dl = 0;
+        }
     }
 
     return logic_dl == 1;
