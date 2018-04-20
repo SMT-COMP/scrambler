@@ -387,51 +387,39 @@ bool flip_antisymm(node *n, node **out_n)
 
 namespace {
 
+void usage(const char *program)
+{
+    std::cout << "Syntax: " << program << " [OPTIONS] < INPUT_FILE.smt2\n"
+              << "\n"
+              << "    -term_annot [true|false]\n"
+              << "        controls whether term annotations are printed (default: true)\n"
+              << "\n"
+              << "    -seed N\n"
+              << "        seed value (>= 0) for pseudo-random choices; if 0, no scrambling is\n"
+              << "        performed (default: time(0))\n"
+              << "\n"
+              << "    -core FILE\n"
+              << "        print only those (named) assertions whose name is contained in the\n"
+              << "        specified FILE (default: print all assertions)\n"
+              << "\n"
+              << "    -generate_unsat_core_benchmark [true|false]\n"
+              << "        controls whether the output is in a format suitable for the unsat-core\n"
+              << "        track of SMT-COMP (default: false)\n";
+    std::cout.flush();
+    exit(1);
+}
+
+
+/*
+ * printing of (scrambled) benchmarks
+ */
+
 std::string make_annot_name(int n)
 {
     std::ostringstream tmp;
     tmp << "y" << n;
     return tmp.str();
 }
-
-typedef std::tr1::unordered_set<std::string> StringSet;
-
-std::string get_named_annot(node *root)
-{
-    std::vector<node *> to_process;
-    std::tr1::unordered_set<node *> seen;
-
-    to_process.push_back(root);
-    while (!to_process.empty()) {
-        node *cur = to_process.back();
-        to_process.pop_back();
-
-        if (!seen.insert(cur).second) {
-            continue;
-        }
-        if (cur->symbol == "!") {
-            if (cur->children.size() >= 1) {
-                to_process.push_back(cur->children[0]);
-            }
-            if (cur->children.size() >= 2) {
-                for (size_t j = 1; j < cur->children.size(); ++j) {
-                    node *attr = cur->children[j];
-                    if (attr->symbol == ":named" &&
-                        !attr->children.empty()) {
-                        return attr->children[0]->symbol;
-                    }
-                }
-            }
-        } else {
-            for (size_t j = 0; j < cur->children.size(); ++j) {
-                to_process.push_back(cur->children[j]);
-            }
-        }
-    }
-
-    return "";
-}
-
 
 void print_node(std::ostream &out, node *n, bool keep_annotations)
 {
@@ -475,13 +463,11 @@ void print_node(std::ostream &out, node *n, bool keep_annotations)
     }
 }
 
-
 void print_command(std::ostream &out, node *n, bool keep_annotations)
 {
     print_node(out, n, keep_annotations);
     out << std::endl;
 }
-
 
 void print_scrambled(std::ostream &out, bool keep_annotations)
 {
@@ -544,49 +530,11 @@ void print_scrambled(std::ostream &out, bool keep_annotations)
     commands.clear();
 }
 
-
-void usage(const char *program)
-{
-    std::cout << "Syntax: " << program << " [OPTIONS] < INPUT_FILE.smt2\n"
-              << "\n"
-              << "    -term_annot [true|false]\n"
-              << "        controls whether term annotations are printed (default: true)\n"
-              << "\n"
-              << "    -seed N\n"
-              << "        seed value (>= 0) for pseudo-random choices; if 0, no scrambling is\n"
-              << "        performed (default: time(0))\n"
-              << "\n"
-              << "    -core FILE\n"
-              << "        print only those (named) assertions whose name is contained in the\n"
-              << "        specified FILE (default: print all assertions)\n"
-              << "\n"
-              << "    -generate_unsat_core_benchmark [true|false]\n"
-              << "        controls whether the output is in a format suitable for the unsat-core\n"
-              << "        track of SMT-COMP (default: false)\n";
-    std::cout.flush();
-    exit(1);
-}
-
-
-void filter_named(const StringSet &to_keep)
-{
-    size_t i, k;
-    for (i = k = 0; i < commands.size(); ++i) {
-        node *cur = commands[i];
-        bool keep = true;
-        if (cur->symbol == "assert") {
-            std::string name = get_named_annot(cur);
-            if (!name.empty() && to_keep.find(name) == to_keep.end()) {
-                keep = false;
-            }
-        }
-        if (keep) {
-            commands[k++] = cur;
-        }
-    }
-    commands.resize(k);
-}
-
+/*
+ * -core
+ */
+  
+typedef std::tr1::unordered_set<std::string> StringSet;
 
 bool parse_core(std::istream &src, StringSet &out)
 {
@@ -630,6 +578,61 @@ bool parse_core(std::istream &src, StringSet &out)
     std::cout << std::endl;
 
     return true;
+}
+
+std::string get_named_annot(node *root)
+{
+    std::vector<node *> to_process;
+    std::tr1::unordered_set<node *> seen;
+
+    to_process.push_back(root);
+    while (!to_process.empty()) {
+        node *cur = to_process.back();
+        to_process.pop_back();
+
+        if (!seen.insert(cur).second) {
+            continue;
+        }
+        if (cur->symbol == "!") {
+            if (cur->children.size() >= 1) {
+                to_process.push_back(cur->children[0]);
+            }
+            if (cur->children.size() >= 2) {
+                for (size_t j = 1; j < cur->children.size(); ++j) {
+                    node *attr = cur->children[j];
+                    if (attr->symbol == ":named" &&
+                        !attr->children.empty()) {
+                        return attr->children[0]->symbol;
+                    }
+                }
+            }
+        } else {
+            for (size_t j = 0; j < cur->children.size(); ++j) {
+                to_process.push_back(cur->children[j]);
+            }
+        }
+    }
+
+    return "";
+}
+
+void filter_named(const StringSet &to_keep)
+{
+    size_t i, k;
+    for (i = k = 0; i < commands.size(); ++i) {
+        node *cur = commands[i];
+        bool keep = true;
+        if (cur->symbol == "assert") {
+            std::string name = get_named_annot(cur);
+            if (!name.empty() && to_keep.find(name) == to_keep.end()) {
+                keep = false;
+            }
+        }
+        if (keep) {
+            commands[k++] = cur;
+        }
+    }
+    commands.resize(k);
 }
 
 } // namespace
@@ -714,7 +717,7 @@ int main(int argc, char **argv)
     }
 
     if (generate_unsat_core_benchmark) {
-        // prepend command that enables production of unsat cores
+        // prepend SMT-LIB command that enables production of unsat cores
         std::cout << "(set-option :produce-unsat-cores true)" << std::endl;
     }
 
@@ -724,6 +727,7 @@ int main(int argc, char **argv)
             if (create_core) {
                 filter_named(names);
             }
+            assert(!commands.empty());
             print_scrambled(std::cout, keep_annotations);
         }
     }
