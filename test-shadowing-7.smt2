@@ -1,3 +1,4 @@
+(set-logic ALL)
 (push 1)
 (declare-fun x () Bool)
 (assert x)

@@ -1,3 +1,4 @@
+(set-logic ALL)
 (declare-fun c0 () Bool)
 (declare-fun E0 () Bool)
 (declare-fun f0 () Bool)

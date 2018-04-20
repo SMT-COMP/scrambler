@@ -57,7 +57,8 @@ node *make_node(std::vector<node *> *v);
 node *make_node(node *n, std::vector<node *> *v);
 void del_node(node *n);
 
-void set_seed(int n);
+void set_logic(const std::string &logic);
+
 void shuffle_list(std::vector<node *> *v);
 bool is_commutative(node *n);
 bool flip_antisymm(node *n, node **out_n);

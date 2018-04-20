@@ -179,6 +179,7 @@ cmd_error :
 cmd_set_logic : '(' TK_SET_LOGIC logic_name ')'
   {
       add_node("set-logic", $3);
+      set_logic($3->symbol);
   }
 ;
 

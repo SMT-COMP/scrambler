@@ -1,3 +1,4 @@
+(set-logic ALL)
 (declare-fun x () Bool)
 (assert (forall ((x Int) (x Int)) (= x x)))
 (assert x)

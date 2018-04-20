@@ -53,19 +53,26 @@ const uint64_t a = 25214903917ULL;
 const uint64_t c = 11U;
 const uint64_t mask = ~(2ULL << 48);
 
+void set_seed(int s)
+{
+    seed = s;
+}
+
 size_t next_rand_int(size_t upper_bound)
 {
     seed = ((seed * a) + c) & mask;
     return (size_t)(seed >> 16U) % upper_bound;
 }
 
-
+/*
+ * If set to true, many of the scrambling transformations (e.g., shuffling of
+ * assertions, permutation of names, etc.) will not be applied.
+ */
 bool no_scramble = false;
 
 /*
- * If set to true the following modifications will be made additionally:
- * 1. The following command will be prepended:
- *    (set-option :produce-unsat-cores true)
+ * If set to true, the following modifications will be made additionally:
+ * 1. The command (set-option :produce-unsat-cores true) will be prepended.
  * 2. A (get-unsat-core) command will be inserted after each (check-sat) command.
  * 3. Each (assert fmla) will be replaced by (assert (! fmla :named freshId))
  *    where freshId is some fresh identifier.
@@ -116,22 +123,40 @@ std::string get_name(const char *n)
     }
 }
 
+} // namespace
+
+
+std::string logic;
+void set_logic(const std::string &l)
+{
+    // each benchmark contains a single set-logic command
+    if (logic != "") {
+        std::cerr << "ERROR logic is already set" << std::endl;
+        exit(1);
+    }
+
+    logic = l;
+}
+
+
+namespace {
 
 int logic_dl = -1;
 bool logic_is_dl()
 {
     if (logic_dl == -1) {
-        if (commands.size() > 0 && commands[0]->symbol == "set-logic") {
-            std::string &logic = commands[0]->children[0]->symbol;
-            logic_dl = (logic == "QF_IDL" ||
-                        logic == "QF_RDL" ||
-                        logic == "QF_UFIDL" ||
-                        logic == "UFIDL") ? 1 : 0;
+        if (logic == "") {
+            std::cerr << "ERROR logic has not been set" << std::endl;
+            exit(1);
         }
+        logic_dl = (logic == "QF_IDL" ||
+                    logic == "QF_RDL" ||
+                    logic == "QF_UFIDL" ||
+                    logic == "UFIDL") ? 1 : 0;
     }
+
     return logic_dl == 1;
 }
-
 
 } // namespace
 
@@ -280,12 +305,6 @@ node *make_node(node *n, std::vector<node *> *v)
     ret->children.push_back(n);
     ret->children.insert(ret->children.end(), v->begin(), v->end());
     return ret;
-}
-
-
-void set_seed(int s)
-{
-    seed = s;
 }
 
 
@@ -460,7 +479,7 @@ void print_node(std::ostream &out, const node *n, bool keep_annotations)
             out << ')';
         }
         if (generate_unsat_core_benchmark && n->symbol == "check-sat") {
-            // append get-unsat-core after check-sat
+            // insert (get-unsat-core) after each check-sat
             out << std::endl << "(get-unsat-core)";
         }
     }
