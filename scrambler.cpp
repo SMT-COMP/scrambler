@@ -704,9 +704,8 @@ int main(int argc, char **argv)
     if (create_core) {
         std::ifstream src(core_file.c_str());
         if (!parse_names(src, names)) {
-            std::cout << "ERROR in parsing core names from " << core_file
-                      << std::endl;
-            return 1;
+            std::cerr << "ERROR parsing core names from " << core_file << std::endl;
+            exit(1);
         }
     }
 
