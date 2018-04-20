@@ -588,7 +588,7 @@ void filter_named(const StringSet &to_keep)
 }
 
 
-bool parse_names(std::istream &src, StringSet &out)
+bool parse_core(std::istream &src, StringSet &out)
 {
     std::string name;
     src >> name;
@@ -635,6 +635,7 @@ bool parse_names(std::istream &src, StringSet &out)
 } // namespace
 
 } // namespace scrambler
+
 
 char *c_strdup(const char *s)
 {
@@ -703,7 +704,7 @@ int main(int argc, char **argv)
     StringSet names;
     if (create_core) {
         std::ifstream src(core_file.c_str());
-        if (!parse_names(src, names)) {
+        if (!parse_core(src, names)) {
             std::cerr << "ERROR parsing core names from " << core_file << std::endl;
             exit(1);
         }
