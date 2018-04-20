@@ -640,6 +640,10 @@ bool parse_core(std::istream &src, StringSet &out)
 char *c_strdup(const char *s)
 {
     char *ret = (char *)malloc(strlen(s) + 1);
+    if (ret == NULL) {
+        exit(1);
+    }
+
     strcpy(ret, s);
     return ret;
 }
@@ -669,8 +673,7 @@ int main(int argc, char **argv)
                     no_scramble = true;
                 }
             } else {
-                std::cerr << "Invalid value for -seed: " << argv[i+1]
-                          << std::endl;
+                std::cerr << "Invalid value for -seed: " << argv[i+1] << std::endl;
                 return 1;
             }
             i += 2;
@@ -706,7 +709,7 @@ int main(int argc, char **argv)
         std::ifstream src(core_file.c_str());
         if (!parse_core(src, names)) {
             std::cerr << "ERROR parsing core names from " << core_file << std::endl;
-            exit(1);
+            return 1;
         }
     }
 
