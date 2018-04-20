@@ -141,7 +141,7 @@ void set_logic(const std::string &l)
 
 namespace {
 
-bool logic_is_dl()
+bool logic_is_dl() // Difference Logic: IDL, RDL
 {
     static int result = -1;
     if (result == -1) {
@@ -160,7 +160,7 @@ bool logic_is_dl()
     return (result == 1);
 }
 
-bool logic_is_arith()
+bool logic_is_arith() // Arithmetic: IA, RA, IRA
 {
     static int result = -1;
     if (result == -1) {
@@ -179,7 +179,7 @@ bool logic_is_arith()
     return (result == 1);
 }
 
-bool logic_is_bv()
+bool logic_is_bv()  // BitVectors
 {
     static int result = -1;
     if (result == -1) {
@@ -197,7 +197,26 @@ bool logic_is_bv()
 
     return result == 1;
 }
-  
+
+bool logic_is_fp()  // FloatingPoint
+{
+    static int result = -1;
+    if (result == -1) {
+        if (logic == "") {
+            std::cerr << "ERROR logic has not been set" << std::endl;
+            exit(1);
+        }
+
+        if (logic.find("FP") != std::string::npos) {
+            result = 1;
+        } else {
+            result = 0;
+        }
+    }
+
+    return result == 1;
+}
+
 } // namespace
 
 
@@ -399,6 +418,13 @@ bool is_commutative(node *n)
         }
     }
 
+    // FloatingPoint
+    if (logic_is_fp()) {
+        if (s == "fp.add" || s == "fp.mul" || s == "fp.eq") {
+            return true;
+        }
+    }
+
     return false;
 }
 
@@ -461,6 +487,23 @@ bool flip_antisymm(node *n, node **out_n)
             return true;
         } else if (s == "bvuge") {
             *out_n = make_node("bvule");
+            return true;
+        }
+    }
+
+    // FloatingPoint
+    if (logic_is_fp()) {
+        if (s == "fp.leq") {
+            *out_n = make_node("fp.geq");
+            return true;
+        } else if (s == "fp.lt") {
+            *out_n = make_node("fp.gt");
+            return true;
+        } else if (s == "fp.geq") {
+            *out_n = make_node("fp.leq");
+            return true;
+        } else if (s == "fp.gt") {
+            *out_n = make_node("fp.lt");
             return true;
         }
     }
@@ -618,7 +661,7 @@ void print_scrambled(std::ostream &out, bool keep_annotations)
 /*
  * -core
  */
-  
+
 typedef std::tr1::unordered_set<std::string> StringSet;
 
 bool parse_core(std::istream &src, StringSet &out)
