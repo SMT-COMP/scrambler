@@ -45,6 +45,21 @@ namespace scrambler {
 
 namespace {
 
+/*
+ * pseudo-random number generator
+ */
+uint64_t seed;
+const uint64_t a = 25214903917ULL;
+const uint64_t c = 11U;
+const uint64_t mask = ~(2ULL << 48);
+
+size_t next_rand_int(size_t upper_bound)
+{
+    seed = ((seed * a) + c) & mask;
+    return (size_t)(seed >> 16U) % upper_bound;
+}
+
+
 bool no_scramble = false;
 
 /*
@@ -75,12 +90,6 @@ std::vector<int> scopes;
 
 std::vector<node *> commands;
 
-uint64_t seed;
-const uint64_t a = 25214903917ULL;
-const uint64_t c = 11U;
-const uint64_t mask = ~(2ULL << 48);
-
-
 const char *unquote(const char *n)
 {
     if (no_scramble || !n[0] || n[0] != '|') {
@@ -95,12 +104,6 @@ const char *unquote(const char *n)
     return buf.c_str();
 }
 
-
-size_t next_rand_int(size_t upper_bound)
-{
-    seed = ((seed * a) + c) & mask;
-    return (size_t)(seed >> 16U) % upper_bound;
-}
 
 std::string get_name(const char *n)
 {
@@ -421,7 +424,7 @@ std::string make_annot_name(int n)
     return tmp.str();
 }
 
-void print_node(std::ostream &out, node *n, bool keep_annotations)
+void print_node(std::ostream &out, const node *n, bool keep_annotations)
 {
     if (!no_scramble && !keep_annotations && n->symbol == "!") {
         print_node(out, n->children[0], keep_annotations);
@@ -463,7 +466,7 @@ void print_node(std::ostream &out, node *n, bool keep_annotations)
     }
 }
 
-void print_command(std::ostream &out, node *n, bool keep_annotations)
+void print_command(std::ostream &out, const node *n, bool keep_annotations)
 {
     print_node(out, n, keep_annotations);
     out << std::endl;
@@ -529,6 +532,7 @@ void print_scrambled(std::ostream &out, bool keep_annotations)
     }
     commands.clear();
 }
+
 
 /*
  * -core
