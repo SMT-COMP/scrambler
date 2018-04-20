@@ -418,7 +418,9 @@ bool flip_antisymm(node *n, node **out_n)
         curs = &(n->children[0]->symbol);
     }
     std::string &s = *curs;
-    if (!logic_is_dl()) {
+
+    // arithmetic (IA, RA, IRA) (but not difference logic)
+    if (logic_is_arith()) {
         if (s == "<") {
             *out_n = make_node(">");
             return true;
@@ -431,7 +433,12 @@ bool flip_antisymm(node *n, node **out_n)
         } else if (s == ">=") {
             *out_n = make_node("<=");
             return true;
-        } else if (s == "bvslt") {
+        }
+    }
+
+    // BitVectors
+    if (logic_is_bv()) {
+        if (s == "bvslt") {
             *out_n = make_node("bvsgt");
             return true;
         } else if (s == "bvsle") {
@@ -457,6 +464,7 @@ bool flip_antisymm(node *n, node **out_n)
             return true;
         }
     }
+
     return false;
 }
 
