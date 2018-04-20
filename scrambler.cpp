@@ -141,25 +141,63 @@ void set_logic(const std::string &l)
 
 namespace {
 
-int logic_dl = -1;
 bool logic_is_dl()
 {
-    if (logic_dl == -1) {
+    static int result = -1;
+    if (result == -1) {
         if (logic == "") {
             std::cerr << "ERROR logic has not been set" << std::endl;
             exit(1);
         }
 
-        if (logic.find("IDL") != std::string::npos || logic.find("RDL") != std::string::npos ) {
-            logic_dl = 1;
+        if (logic.find("IDL") != std::string::npos || logic.find("RDL") != std::string::npos) {
+            result = 1;
         } else {
-            logic_dl = 0;
+            result = 0;
         }
     }
 
-    return logic_dl == 1;
+    return (result == 1);
 }
 
+bool logic_is_arith()
+{
+    static int result = -1;
+    if (result == -1) {
+        if (logic == "") {
+            std::cerr << "ERROR logic has not been set" << std::endl;
+            exit(1);
+        }
+
+        if (logic.find("IA") != std::string::npos || logic.find("RA") != std::string::npos) {
+            result = 1;
+        } else {
+            result = 0;
+        }
+    }
+
+    return (result == 1);
+}
+
+bool logic_is_bv()
+{
+    static int result = -1;
+    if (result == -1) {
+        if (logic == "") {
+            std::cerr << "ERROR logic has not been set" << std::endl;
+            exit(1);
+        }
+
+        if (logic.find("BV") != std::string::npos) {
+            result = 1;
+        } else {
+            result = 0;
+        }
+    }
+
+    return result == 1;
+}
+  
 } // namespace
 
 
@@ -334,19 +372,33 @@ bool is_commutative(node *n)
         curs = &(n->children[0]->symbol);
     }
     std::string &s = *curs;
+
+    // Core theory
     if (s == "and" || s == "or" || s == "xor" || s == "distinct") {
         return true;
     }
     if (!logic_is_dl()) {
-        if (s == "*" || s == "+" || s == "=") {
+        if (s == "=") {
             return true;
         }
+    }
+
+    // arithmetic (IA, RA, IRA) (but not difference logic)
+    if (logic_is_arith()) {
+        if (s == "*" || s == "+") {
+            return true;
+        }
+    }
+
+    // BitVectors
+    if (logic_is_bv()) {
         if (s == "bvand" || s == "bvor" || s == "bvxor" ||
             s == "bvnand" || s == "bvnor" || s == "bvcomp" ||
             s == "bvadd" || s == "bvmul") {
             return true;
         }
     }
+
     return false;
 }
 
