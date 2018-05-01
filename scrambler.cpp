@@ -79,12 +79,20 @@ bool no_scramble = false;
  */
 bool generate_unsat_core_benchmark = false;
 
+/*
+ * Support for scrambling of benchmark-defined symbols. For details
+ * see "Scrambling and Descrambling SMT-LIB Benchmarks" (Tjark Weber;
+ * in Tim King and Ruzica Piskac, editors, Proceedings of the 14th
+ * International Workshop on Satisfiability Modulo Theories, Coimbra,
+ * Portugal, July 1-2, 2016, volume 1617 of CEUR Workshop Proceedings,
+ * pages 31-40, July 2016).
+ */
 typedef std::tr1::unordered_map<std::string, std::string> NameMap;
-NameMap names;
 
-NameMap permuted_names;
+NameMap names;  // a map from benchmark-defined symbols (e.g., f, g,
+                // foobar) to uniform names (e.g., x1, x2, x3)
 
-std::stack<NameMap*> shadow_undos;
+NameMap permuted_names;  // a permutation of uniform names
 
 std::string make_name(int n)
 {
@@ -93,8 +101,14 @@ std::string make_name(int n)
     return tmp.str();
 }
 
+std::stack<NameMap*> shadow_undos;
+
 std::vector<int> scopes;
 
+/*
+ * The main data structure for the parser: here the benchmark's
+ * commands are stored as they are parsed
+ */
 std::vector<node *> commands;
 
 const char *unquote(const char *n)
@@ -179,7 +193,7 @@ bool logic_is_arith() // Arithmetic: IA, RA, IRA
     return (result == 1);
 }
 
-bool logic_is_bv()  // BitVectors
+bool logic_is_bv()  // BitVectors (BV)
 {
     static int result = -1;
     if (result == -1) {
@@ -198,7 +212,7 @@ bool logic_is_bv()  // BitVectors
     return result == 1;
 }
 
-bool logic_is_fp()  // FloatingPoint
+bool logic_is_fp()  // FloatingPoint (FP)
 {
     static int result = -1;
     if (result == -1) {
@@ -835,10 +849,10 @@ int main(int argc, char **argv)
         }
     }
 
-    StringSet names;
+    StringSet core_names;
     if (create_core) {
         std::ifstream src(core_file.c_str());
-        if (!parse_core(src, names)) {
+        if (!parse_core(src, core_names)) {
             std::cerr << "ERROR parsing core names from " << core_file << std::endl;
             return 1;
         }
@@ -853,7 +867,7 @@ int main(int argc, char **argv)
         yyparse();
         if (!commands.empty() && commands.back()->symbol == "check-sat") {
             if (create_core) {
-                filter_named(names);
+                filter_named(core_names);
             }
             assert(!commands.empty());
             print_scrambled(std::cout, keep_annotations);
@@ -861,7 +875,7 @@ int main(int argc, char **argv)
     }
 
     if (create_core) {
-        filter_named(names);
+        filter_named(core_names);
     }
     if (!commands.empty()) {
         print_scrambled(std::cout, keep_annotations);
