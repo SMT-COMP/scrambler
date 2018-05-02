@@ -25,6 +25,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+
 #include "scrambler.h"
 #include <tr1/unordered_map>
 #include <tr1/unordered_set>
@@ -106,10 +107,11 @@ std::stack<NameMap*> shadow_undos;
 std::vector<int> scopes;
 
 /*
- * The main data structure for the parser: here the benchmark's
- * commands are stored as they are parsed
+ * The main data structure: here the benchmark's commands are added as
+ * they are parsed (and removed when they have been printed).
  */
 std::vector<node *> commands;
+
 
 const char *unquote(const char *n)
 {
@@ -354,13 +356,13 @@ void del_node(node *n)
 }
 
 
-void node::add_children(std::vector<node *> *c)
+void node::add_children(const std::vector<node *> *c)
 {
     children.insert(children.end(), c->begin(), c->end());
 }
 
 
-node *make_node(std::vector<node *> *v)
+node *make_node(const std::vector<node *> *v)
 {
     node *ret = new node;
     ret->needs_parens = true;
@@ -370,7 +372,7 @@ node *make_node(std::vector<node *> *v)
 }
 
 
-node *make_node(node *n, std::vector<node *> *v)
+node *make_node(node *n, const std::vector<node *> *v)
 {
     node *ret = new node;
     ret->needs_parens = true;
@@ -398,13 +400,13 @@ void shuffle_list(std::vector<node *> *v)
 }
 
 
-bool is_commutative(node *n)
+bool is_commutative(const node *n)
 {
-    std::string *curs = &(n->symbol);
+    const std::string *curs = &(n->symbol);
     if (curs->empty() && !n->children.empty()) {
         curs = &(n->children[0]->symbol);
     }
-    std::string &s = *curs;
+    const std::string &s = *curs;
 
     // Core theory
     if (s == "and" || s == "or" || s == "xor" || s == "distinct") {
@@ -443,7 +445,7 @@ bool is_commutative(node *n)
 }
 
 
-bool flip_antisymm(node *n, node **out_n)
+bool flip_antisymm(const node *n, node ** const out_n)
 {
     if (no_scramble) {
         return false;
@@ -453,11 +455,11 @@ bool flip_antisymm(node *n, node **out_n)
         return false;
     }
 
-    std::string *curs = &(n->symbol);
+    const std::string *curs = &(n->symbol);
     if (curs->empty() && !n->children.empty()) {
         curs = &(n->children[0]->symbol);
     }
-    std::string &s = *curs;
+    const std::string &s = *curs;
 
     // arithmetic (IA, RA, IRA) (but not difference logic)
     if (logic_is_arith()) {
