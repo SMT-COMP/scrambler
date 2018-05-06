@@ -240,8 +240,6 @@ cmd_define_fun :
       for (i = 0; i < $5->size(); ++i) {
           pop_namespace();
       }
-      name_idx += i; // for backwards compatibility with earlier
-                     // scrambler versions
       set_new_name($3);
       add_node("define-fun", make_node($3), make_node($5), $7, $8);
       free($3);

@@ -6,4 +6,5 @@
 # $1: benchmark filename
 # $2: seed
 
+ulimit -s 131072
 ./scrambler -seed "$2" < "$1"

@@ -28,6 +28,7 @@
 #ifndef SCRAMBLER_H_INCLUDED
 #define SCRAMBLER_H_INCLUDED
 
+#include <stdint.h>
 #include <vector>
 #include <string>
 
@@ -35,6 +36,8 @@ namespace scrambler {
 
 struct node {
     std::string symbol;
+    uint64_t name_id; // 0 if symbol is not a benchmark-declared name
+
     std::vector<node *> children;
     bool needs_parens;
 
@@ -42,8 +45,6 @@ struct node {
 
     void set_parens_needed(bool b) { needs_parens = b; }
 };
-
-extern int name_idx;
 
 void set_new_name(const char *n);
 void push_namespace();
@@ -55,13 +56,14 @@ void add_node(const char *s,
 node *make_node(const char *s=NULL, node *n1=NULL, node *n2=NULL);
 node *make_node(const std::vector<node *> *v);
 node *make_node(node *n, const std::vector<node *> *v);
+
 void del_node(node *n);
 
 void set_logic(const std::string &logic);
-
-void shuffle_list(std::vector<node *> *v);
 bool is_commutative(const node *n);
 bool flip_antisymm(const node *n, node ** const out_n);
+
+void shuffle_list(std::vector<node *> *v);
 
 } // namespace scrambler
 

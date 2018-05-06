@@ -42,9 +42,7 @@
 #include <ctype.h>
 #include <stack>
 
-namespace scrambler {
-
-namespace {
+////////////////////////////////////////////////////////////////////////////////
 
 /*
  * pseudo-random number generator
@@ -65,6 +63,8 @@ size_t next_rand_int(size_t upper_bound)
     return (size_t)(seed >> 16U) % upper_bound;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 /*
  * If set to true, many of the scrambling transformations (e.g., shuffling of
  * assertions, permutation of names, etc.) will not be applied.
@@ -80,44 +80,91 @@ bool no_scramble = false;
  */
 bool generate_unsat_core_benchmark = false;
 
+////////////////////////////////////////////////////////////////////////////////
+
 /*
- * Support for scrambling of benchmark-defined symbols. For details
- * see "Scrambling and Descrambling SMT-LIB Benchmarks" (Tjark Weber;
- * in Tim King and Ruzica Piskac, editors, Proceedings of the 14th
- * International Workshop on Satisfiability Modulo Theories, Coimbra,
- * Portugal, July 1-2, 2016, volume 1617 of CEUR Workshop Proceedings,
- * pages 31-40, July 2016).
+ * Scrambling of symbols (i.e., names) declared in the benchmark. For
+ * details see "Scrambling and Descrambling SMT-LIB Benchmarks" (Tjark
+ * Weber; in Tim King and Ruzica Piskac, editors, Proceedings of the
+ * 14th International Workshop on Satisfiability Modulo Theories,
+ * Coimbra, Portugal, July 1-2, 2016, volume 1617 of CEUR Workshop
+ * Proceedings, pages 31-40, July 2016).
+ *
+ * There are three kinds of names: (1) names declared in the input
+ * benchmark (e.g., sort symbols, function symbols, bound variables);
+ * (2) unique name identifiers used during parsing (mainly to
+ * disambiguate shadowed symbols); and (3) uniform names (i.e., x1,
+ * x2, ...) used when the scrambled benchmark is printed.
+ *
+ * Benchmark-declared names are read during parsing and stored in the
+ * nodes of the parse tree; specifically, in their symbol field (which
+ * is otherwise also used to store SMT-LIB commands, keywords, etc.).
+ *
+ * In addition, a "symbol table" -- a map from benchmark-declared
+ * names to unique name identifiers -- is built during parsing. This
+ * map is extended whenever a declaration or binder is encountered.
+ * When a (non-global) scope ends, all declarations made within that
+ * scope are undone. To this end, shadowed declarations are kept in a
+ * stack of maps (with one map for each scope) until the scope ends.
+ *
+ * Unique name identifiers are also stored in the nodes of the parse
+ * tree; specifically, in their name_id field. The value of the
+ * name_id field is 0 if (and only if) the node's symbol field does
+ * not contain a benchmark-declared name.
+ *
+ * Finally, when the scrambled benchmark is printed, unique name
+ * identifiers are permuted randomly before they are turned into
+ * uniform names.
  */
-typedef std::tr1::unordered_map<std::string, std::string> NameMap;
 
-NameMap names;  // a map from benchmark-defined symbols (e.g., f, g,
-                // foobar) to uniform names (e.g., x1, x2, x3)
+typedef std::tr1::unordered_map<std::string, uint64_t> Name_ID_Map;
 
-NameMap permuted_names;  // a permutation of uniform names
+// symbol table: map from benchmark-declared symbols to unique name
+// identifiers
+Name_ID_Map name_ids;
 
-std::string make_name(int n)
+// symbol table: information to undo declarations when a (non-global)
+// scope ends
+std::stack<Name_ID_Map*> shadow_undos;
+
+namespace scrambler {
+
+// entering a new scope
+void push_namespace()
 {
-    std::ostringstream tmp;
-    tmp << "x" << n;
-    return tmp.str();
+    shadow_undos.push(new Name_ID_Map());
 }
 
-std::stack<NameMap*> shadow_undos;
+// leaving a scope
+void pop_namespace()
+{
+    if (shadow_undos.empty()) {
+        std::cerr << "ERROR pop command over an empty stack" << std::endl;
+        exit(1);
+    }
 
-std::vector<int> scopes;
+    Name_ID_Map *shadow_undo = shadow_undos.top();
+    for (Name_ID_Map::iterator it = shadow_undo->begin(); it != shadow_undo->end(); ++it) {
+        if (it->second == 0) {
+            name_ids.erase(it->first);
+        } else {
+            name_ids[it->first] = it->second;
+        }
+      }
+    shadow_undos.pop();
+    delete shadow_undo;
+}
 
-/*
- * The main data structure: here the benchmark's commands are added as
- * they are parsed (and removed when they have been printed).
- */
-std::vector<node *> commands;
+} // namespace
 
-
+// |foo| and foo denote the same symbol in SMT-LIB, hence the need to
+// remove |...| quotes before symbol table updates and lookups
 const char *unquote(const char *n)
 {
-    if (no_scramble || !n[0] || n[0] != '|') {
+    if (!n[0] || n[0] != '|') {
         return n;
     }
+
     static std::string buf;
     buf = n;
     assert(!buf.empty());
@@ -127,22 +174,172 @@ const char *unquote(const char *n)
     return buf.c_str();
 }
 
+// the next available name id
+uint64_t next_name_id = 1;
 
-std::string get_name(const char *n)
+namespace scrambler {
+
+// declaring a new name
+void set_new_name(const char *n)
 {
-    std::string sn(unquote(n));
-    NameMap::iterator it = names.find(sn);
-    if (it != names.end()) {
-        return it->second;
+    n = unquote(n);
+
+    if (shadow_undos.empty()) {
+        if (name_ids.count(n) > 0) {
+            std::cerr << "ERROR duplicate name declaration at top-level: " << n << std::endl;
+            exit(1);
+        }
     } else {
-        return sn;
+        // store n's current id (to restore at a later namespace pop)
+        Name_ID_Map *shadow_undo = shadow_undos.top();
+        if (shadow_undo->count(n) > 0) {
+            std::cerr << "ERROR duplicate name declaration: " << n << std::endl;
+            exit(1);
+        }
+        (*shadow_undo)[n] = name_ids[n];  // 0 if n is not currently in name_ids
     }
+
+    name_ids[n] = next_name_id;
+    ++next_name_id;
 }
 
 } // namespace
 
+uint64_t get_name_id(const char *n)
+{
+    n = unquote(n);
+
+    return name_ids[n];  // 0 if n is not currently in name_ids
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+namespace scrambler {
+
+void node::add_children(const std::vector<node *> *c)
+{
+    children.insert(children.end(), c->begin(), c->end());
+}
+
+} // namespace
+
+////////////////////////////////////////////////////////////////////////////////
+
+/*
+ * The main data structure: here the benchmark's commands are added as
+ * they are parsed (and removed when they have been printed).
+ */
+std::vector<scrambler::node *> commands;
+
+namespace scrambler {
+
+void add_node(const char *s, node *n1, node *n2, node *n3, node *n4)
+{
+    assert(s); // s must be a top-level SMT-LIB command
+
+    node *ret = new node;
+    ret->symbol = s;
+    ret->name_id = 0;
+    ret->needs_parens = true;
+
+    if (n1) {
+        ret->children.push_back(n1);
+    }
+    if (n2) {
+        ret->children.push_back(n2);
+    }
+    if (n3) {
+        ret->children.push_back(n3);
+    }
+    if (n4) {
+        ret->children.push_back(n4);
+    }
+
+    commands.push_back(ret);
+}
+
+node *make_node(const char *s, node *n1, node *n2)
+{
+    node *ret = new node;
+    ret->needs_parens = true;
+    if (s) {
+        ret->symbol = s;
+        ret->name_id = get_name_id(s);
+    }
+    if (n1) {
+        ret->children.push_back(n1);
+    }
+    if (n2) {
+        ret->children.push_back(n2);
+    }
+    if (!ret->symbol.empty() && ret->children.empty()) {
+        ret->needs_parens = false;
+    }
+    return ret;
+}
+
+node *make_node(const std::vector<node *> *v)
+{
+    node *ret = new node;
+    ret->needs_parens = true;
+    ret->symbol = "";
+    ret->name_id = 0;
+    ret->children.assign(v->begin(), v->end());
+    return ret;
+}
+
+node *make_node(node *n, const std::vector<node *> *v)
+{
+    node *ret = new node;
+    ret->needs_parens = true;
+    ret->symbol = "";
+    ret->name_id = 0;
+    ret->children.push_back(n);
+    ret->children.insert(ret->children.end(), v->begin(), v->end());
+    return ret;
+}
+
+void del_node(node *n)
+{
+    for (size_t i = 0; i < n->children.size(); ++i) {
+        del_node(n->children[i]);
+    }
+    delete n;
+}
+
+} // scrambler
+
+////////////////////////////////////////////////////////////////////////////////
+
+void shuffle_list(std::vector<scrambler::node *> *v, size_t start, size_t end)
+{
+    if (!no_scramble) {
+        size_t n = end - start;
+        for (size_t i = n-1; i > 0; --i) {
+            std::swap((*v)[i+start], (*v)[next_rand_int(i+1)+start]);
+        }
+    }
+}
+
+namespace scrambler {
+
+void shuffle_list(std::vector<node *> *v)
+{
+    ::shuffle_list(v, 0, v->size());
+}
+
+} // scrambler
+
+////////////////////////////////////////////////////////////////////////////////
+
+/*
+ * functions that set or depend on the benchmark's logic
+ */
 
 std::string logic;
+
+namespace scrambler {
+
 void set_logic(const std::string &l)
 {
     // each benchmark contains a single set-logic command
@@ -154,10 +351,9 @@ void set_logic(const std::string &l)
     logic = l;
 }
 
+} // scrambler
 
-namespace {
-
-bool logic_is_dl() // Difference Logic: IDL, RDL
+bool logic_is_dl()  // Difference Logic: IDL, RDL
 {
     static int result = -1;
     if (result == -1) {
@@ -176,7 +372,7 @@ bool logic_is_dl() // Difference Logic: IDL, RDL
     return (result == 1);
 }
 
-bool logic_is_arith() // Arithmetic: IA, RA, IRA
+bool logic_is_arith()  // Arithmetic: IA, RA, IRA
 {
     static int result = -1;
     if (result == -1) {
@@ -233,172 +429,7 @@ bool logic_is_fp()  // FloatingPoint (FP)
     return result == 1;
 }
 
-} // namespace
-
-
-int name_idx = 1;
-
-void set_new_name(const char *n)
-{
-    n = unquote(n);
-
-    if (shadow_undos.empty())
-      {
-        if (names.count(n) > 0)
-          {
-            std::cerr << "ERROR duplicate name declaration at top-level: " << n << std::endl;
-            exit(1);
-          }
-      }
-    else
-      {
-        // store current name (for later namespace pop)
-        NameMap *shadow_undo = shadow_undos.top();
-        if (shadow_undo->count(n) > 0)
-          {
-            std::cerr << "ERROR duplicate name declaration: " << n << std::endl;
-            exit(1);
-          }
-        (*shadow_undo)[n] = names[n];  // empty string if no current name
-      }
-
-    if (no_scramble) {
-        names[n] = n;
-    } else {
-        names[n] = make_name(name_idx++);
-    }
-}
-
-
-void push_namespace()
-{
-    shadow_undos.push(new NameMap());
-    scopes.push_back(name_idx);
-}
-
-
-void pop_namespace()
-{
-    if (scopes.empty()) {
-        std::cerr << "ERROR pop command over an empty stack" << std::endl;
-        exit(1);
-    }
-
-    assert(!shadow_undos.empty());
-    NameMap *shadow_undo = shadow_undos.top();
-    for (NameMap::iterator it = shadow_undo->begin(); it != shadow_undo->end(); ++it)
-      {
-        if (it->second.empty())
-          {
-            names.erase(it->first);
-          }
-        else
-          {
-            names[it->first] = it->second;
-          }
-      }
-    shadow_undos.pop();
-    delete shadow_undo;
-
-    name_idx = scopes.back();
-    scopes.pop_back();
-}
-
-
-void add_node(const char *s, node *n1, node *n2, node *n3, node *n4)
-{
-    node *ret = new node;
-    ret->symbol = get_name(s);
-    ret->needs_parens = true;
-    if (n1) {
-        ret->children.push_back(n1);
-    }
-    if (n2) {
-        ret->children.push_back(n2);
-    }
-    if (n3) {
-        ret->children.push_back(n3);
-    }
-    if (n4) {
-        ret->children.push_back(n4);
-    }
-
-    commands.push_back(ret);
-}
-
-
-node *make_node(const char *s, node *n1, node *n2)
-{
-    node *ret = new node;
-    ret->needs_parens = true;
-    if (s) {
-        ret->symbol = get_name(s);
-    }
-    if (n1) {
-        ret->children.push_back(n1);
-    }
-    if (n2) {
-        ret->children.push_back(n2);
-    }
-    if (!ret->symbol.empty() && ret->children.empty()) {
-        ret->needs_parens = false;
-    }
-    return ret;
-}
-
-
-void del_node(node *n)
-{
-    for (size_t i = 0; i < n->children.size(); ++i) {
-        del_node(n->children[i]);
-    }
-    delete n;
-}
-
-
-void node::add_children(const std::vector<node *> *c)
-{
-    children.insert(children.end(), c->begin(), c->end());
-}
-
-
-node *make_node(const std::vector<node *> *v)
-{
-    node *ret = new node;
-    ret->needs_parens = true;
-    ret->symbol = "";
-    ret->children.assign(v->begin(), v->end());
-    return ret;
-}
-
-
-node *make_node(node *n, const std::vector<node *> *v)
-{
-    node *ret = new node;
-    ret->needs_parens = true;
-    ret->symbol = "";
-    ret->children.push_back(n);
-    ret->children.insert(ret->children.end(), v->begin(), v->end());
-    return ret;
-}
-
-
-void shuffle_list(std::vector<node *> *v, size_t start, size_t end)
-{
-    if (!no_scramble) {
-        size_t n = end - start;
-        for (size_t i = n-1; i > 0; --i) {
-            std::swap((*v)[i+start], (*v)[next_rand_int(i+1)+start]);
-        }
-    }
-}
-
-
-void shuffle_list(std::vector<node *> *v)
-{
-    shuffle_list(v, 0, v->size());
-}
-
+namespace scrambler {
 
 bool is_commutative(const node *n)
 {
@@ -443,7 +474,6 @@ bool is_commutative(const node *n)
 
     return false;
 }
-
 
 bool flip_antisymm(const node *n, node ** const out_n)
 {
@@ -527,44 +557,36 @@ bool flip_antisymm(const node *n, node ** const out_n)
     return false;
 }
 
+} // scrambler
 
-namespace {
-
-void usage(const char *program)
-{
-    std::cout << "Syntax: " << program << " [OPTIONS] < INPUT_FILE.smt2\n"
-              << "\n"
-              << "    -term_annot [true|false]\n"
-              << "        controls whether term annotations are printed (default: true)\n"
-              << "\n"
-              << "    -seed N\n"
-              << "        seed value (>= 0) for pseudo-random choices; if 0, no scrambling is\n"
-              << "        performed (default: time(0))\n"
-              << "\n"
-              << "    -core FILE\n"
-              << "        print only those (named) assertions whose name is contained in the\n"
-              << "        specified FILE (default: print all assertions)\n"
-              << "\n"
-              << "    -generate_unsat_core_benchmark [true|false]\n"
-              << "        controls whether the output is in a format suitable for the unsat-core\n"
-              << "        track of SMT-COMP (default: false)\n";
-    std::cout.flush();
-    exit(1);
-}
-
+////////////////////////////////////////////////////////////////////////////////
 
 /*
- * printing of (scrambled) benchmarks
+ * (scrambled) printing of benchmarks
  */
 
-std::string make_annot_name(int n)
+// a random permutation of name ids
+std::vector<uint64_t> permuted_name_ids;
+
+// uniform names
+std::string make_name(uint64_t name_id)
 {
     std::ostringstream tmp;
-    tmp << "y" << n;
+    tmp << "x" << name_id;
     return tmp.str();
 }
 
-void print_node(std::ostream &out, const node *n, bool keep_annotations)
+// annotated assertions (for -generate_unsat_core_benchmark true)
+std::string make_annotation_name()
+{
+    static uint64_t n = 1;
+    std::ostringstream tmp;
+    tmp << "a" << n;
+    ++n;
+    return tmp.str();
+}
+
+void print_node(std::ostream &out, const scrambler::node *n, bool keep_annotations)
 {
     if (!no_scramble && !keep_annotations && n->symbol == "!") {
         print_node(out, n->children[0], keep_annotations);
@@ -573,16 +595,16 @@ void print_node(std::ostream &out, const node *n, bool keep_annotations)
             out << '(';
         }
         if (!n->symbol.empty()) {
-            NameMap::iterator it = permuted_names.find(n->symbol);
-            if (it != permuted_names.end()) {
-                out << it->second;
-            } else {
+            if (no_scramble || n->name_id == 0) {
                 out << n->symbol;
+            } else {
+                assert(n->name_id < permuted_name_ids.size());
+                out << make_name(permuted_name_ids[n->name_id]);
             }
         }
         std::string name;
         if (generate_unsat_core_benchmark && n->symbol == "assert") {
-            name = make_annot_name(name_idx++);
+            name = make_annotation_name();
         }
         if (!name.empty()) {
             out << " (!";
@@ -606,7 +628,7 @@ void print_node(std::ostream &out, const node *n, bool keep_annotations)
     }
 }
 
-void print_command(std::ostream &out, const node *n, bool keep_annotations)
+void print_command(std::ostream &out, const scrambler::node *n, bool keep_annotations)
 {
     print_node(out, n, keep_annotations);
     out << std::endl;
@@ -614,58 +636,70 @@ void print_command(std::ostream &out, const node *n, bool keep_annotations)
 
 void print_scrambled(std::ostream &out, bool keep_annotations)
 {
-    // identify consecutive declarations and shuffle them
-    for (size_t i = 0; i < commands.size(); ) {
-        if (commands[i]->symbol == "declare-fun") {
-            size_t j = i+1;
-            while (j < commands.size() &&
-                   commands[j]->symbol == "declare-fun") {
-                ++j;
+    if (!no_scramble) {
+        // identify consecutive declarations and shuffle them
+        for (size_t i = 0; i < commands.size(); ) {
+            if (commands[i]->symbol == "declare-fun") {
+                size_t j = i+1;
+                while (j < commands.size() &&
+                       commands[j]->symbol == "declare-fun") {
+                    ++j;
+                }
+                if (j - i > 1) {
+                    shuffle_list(&commands, i, j);
+                }
+                i = j;
+            } else {
+                ++i;
             }
-            if (j - i > 1) {
-                shuffle_list(&commands, i, j);
+        }
+
+        // identify consecutive assertions and shuffle them
+        for (size_t i = 0; i < commands.size(); ) {
+            if (commands[i]->symbol == "assert") {
+                size_t j = i+1;
+                while (j < commands.size() &&
+                       commands[j]->symbol == "assert"){
+                    ++j;
+                }
+                if (j - i > 1) {
+                    shuffle_list(&commands, i, j);
+                }
+                i = j;
+            } else {
+                ++i;
             }
-            i = j;
-        } else {
-            ++i;
+        }
+
+        // Generate a random permutation of name ids. Note that index
+        // 0 is unused in the permuted_name_ids vector (but present to
+        // simplify indexing), and index next_name_id is out of range.
+        size_t old_size = permuted_name_ids.size();
+        assert(old_size <= next_name_id);
+        // Since the print_scrambled function may be called multiple
+        // times (for different parts of the benchmark), we only need
+        // to permute those name ids that have been declared since the
+        // last call to print_scrambled.
+        if (old_size < next_name_id) {
+            permuted_name_ids.reserve(next_name_id);
+            for (size_t i = old_size; i < next_name_id; ++i) {
+                permuted_name_ids.push_back(i);
+                assert(permuted_name_ids[i] == i);
+            }
+            assert(permuted_name_ids.size() == next_name_id);
+            // index 0 must not be shuffled
+            if (old_size == 0) {
+                old_size = 1;
+            }
+            // Knuth shuffle
+            for (size_t i = old_size; i < next_name_id - 1; ++i) {
+                size_t j = i + next_rand_int(next_name_id - i);
+                std::swap(permuted_name_ids[i], permuted_name_ids[j]);
+            }
         }
     }
 
-    // identify consecutive assertions and shuffle them
-    for (size_t i = 0; i < commands.size(); ) {
-        if (commands[i]->symbol == "assert") {
-            size_t j = i+1;
-            while (j < commands.size() && commands[j]->symbol == "assert"){
-                ++j;
-            }
-            if (j - i > 1) {
-                shuffle_list(&commands, i, j);
-            }
-            i = j;
-        } else {
-            ++i;
-        }
-    }
-
-    // This randomly permutes the top-level names only. A better
-    // implementation would permute all names, including those in
-    // local scopes (e.g., bound by a "let").
-
-    // Also, this has not been tested together with advanced scrambler
-    // features (e.g., named annotations, incremental benchmarks).
-
-    // generate random name permutation, aka Knuth shuffle (note that
-    // index 0 is unused, and index name_idx is out of range)
-    int permutation[name_idx];
-    for (int i=1; i<name_idx; ++i) {
-        int j = 1 + next_rand_int(i);
-        permutation[i] = permutation[j];
-        permutation[j] = i;
-    }
-    for (int i=1; i<name_idx; ++i) {
-      permuted_names[make_name(i)] = make_name(permutation[i]);
-    }
-
+    // print all commands
     for (size_t i = 0; i < commands.size(); ++i) {
         print_command(out, commands[i], keep_annotations);
         del_node(commands[i]);
@@ -673,6 +707,7 @@ void print_scrambled(std::ostream &out, bool keep_annotations)
     commands.clear();
 }
 
+////////////////////////////////////////////////////////////////////////////////
 
 /*
  * -core
@@ -724,14 +759,14 @@ bool parse_core(std::istream &src, StringSet &out)
     return true;
 }
 
-std::string get_named_annot(node *root)
+std::string get_named_annot(scrambler::node *root)
 {
-    std::vector<node *> to_process;
-    std::tr1::unordered_set<node *> seen;
+    std::vector<scrambler::node *> to_process;
+    std::tr1::unordered_set<scrambler::node *> seen;
 
     to_process.push_back(root);
     while (!to_process.empty()) {
-        node *cur = to_process.back();
+        scrambler::node *cur = to_process.back();
         to_process.pop_back();
 
         if (!seen.insert(cur).second) {
@@ -743,7 +778,7 @@ std::string get_named_annot(node *root)
             }
             if (cur->children.size() >= 2) {
                 for (size_t j = 1; j < cur->children.size(); ++j) {
-                    node *attr = cur->children[j];
+                    scrambler::node *attr = cur->children[j];
                     if (attr->symbol == ":named" &&
                         !attr->children.empty()) {
                         return attr->children[0]->symbol;
@@ -764,7 +799,7 @@ void filter_named(const StringSet &to_keep)
 {
     size_t i, k;
     for (i = k = 0; i < commands.size(); ++i) {
-        node *cur = commands[i];
+        scrambler::node *cur = commands[i];
         bool keep = true;
         if (cur->symbol == "assert") {
             std::string name = get_named_annot(cur);
@@ -779,10 +814,7 @@ void filter_named(const StringSet &to_keep)
     commands.resize(k);
 }
 
-} // namespace
-
-} // namespace scrambler
-
+////////////////////////////////////////////////////////////////////////////////
 
 char *c_strdup(const char *s)
 {
@@ -795,6 +827,31 @@ char *c_strdup(const char *s)
     return ret;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
+void usage(const char *program)
+{
+    std::cout << "Syntax: " << program << " [OPTIONS] < INPUT_FILE.smt2\n"
+              << "\n"
+              << "    -term_annot [true|false]\n"
+              << "        controls whether term annotations are printed (default: true)\n"
+              << "\n"
+              << "    -seed N\n"
+              << "        seed value (>= 0) for pseudo-random choices; if 0, no scrambling is\n"
+              << "        performed (default: time(0))\n"
+              << "\n"
+              << "    -core FILE\n"
+              << "        print only those (named) assertions whose name is contained in the\n"
+              << "        specified FILE (default: print all assertions)\n"
+              << "\n"
+              << "    -generate_unsat_core_benchmark [true|false]\n"
+              << "        controls whether the output is in a format suitable for the unsat-core\n"
+              << "        track of SMT-COMP (default: false)\n";
+    std::cout.flush();
+    exit(1);
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 extern int yyparse();
 
