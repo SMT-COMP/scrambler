@@ -84,6 +84,7 @@ KEYWORD             :[a-zA-Z0-9._+\-*=%?!$_~&^<>@]+
 "declare-sort"  { return TK_DECLARE_SORT; }
 "define-sort"   { return TK_DEFINE_SORT; }
 "declare-fun"   { return TK_DECLARE_FUN; }
+"declare-const" { return TK_DECLARE_CONST; }
 "define-fun"    { return TK_DEFINE_FUN; }
 "push"          { return TK_PUSH; }
 "pop"           { return TK_POP; }

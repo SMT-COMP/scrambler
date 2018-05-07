@@ -82,6 +82,7 @@ using namespace scrambler;
 %token TK_DECLARE_SORT         "declare-sort"
 %token TK_DEFINE_SORT          "define-sort"
 %token TK_DECLARE_FUN          "declare-fun"
+%token TK_DECLARE_CONST        "declare-const"
 %token TK_DEFINE_FUN           "define-fun"
 %token TK_PUSH                 "push"
 %token TK_POP                  "pop"
@@ -152,6 +153,7 @@ command :
 | cmd_declare_sort
 | cmd_define_sort
 | cmd_declare_fun
+| cmd_declare_const
 | cmd_define_fun
 | cmd_push
 | cmd_pop
@@ -221,6 +223,16 @@ cmd_declare_fun :
   {
       set_new_name($3);
       add_node("declare-fun", make_node($3), make_node($5), $7);
+      free($3);
+  }
+;
+
+
+cmd_declare_const : '(' TK_DECLARE_CONST SYMBOL a_sort ')'
+  {
+      set_new_name($3);
+      //add_node("declare-const", make_node($3), $4);
+      add_node("declare-fun", make_node($3), make_node(), $4);
       free($3);
   }
 ;
