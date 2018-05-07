@@ -92,73 +92,30 @@ bool generate_unsat_core_benchmark = false;
  *
  * There are three kinds of names: (1) names declared in the input
  * benchmark (e.g., sort symbols, function symbols, bound variables);
- * (2) unique name identifiers used during parsing (mainly to
- * disambiguate shadowed symbols); and (3) uniform names (i.e., x1,
- * x2, ...) used when the scrambled benchmark is printed.
+ * (2) name identifiers used during parsing; and (3) uniform names
+ * (i.e., x1, x2, ...) used when the scrambled benchmark is printed.
  *
  * Benchmark-declared names are read during parsing and stored in the
  * nodes of the parse tree; specifically, in their symbol field (which
  * is otherwise also used to store SMT-LIB commands, keywords, etc.).
  *
- * In addition, a "symbol table" -- a map from benchmark-declared
- * names to unique name identifiers -- is built during parsing. This
- * map is extended whenever a declaration or binder is encountered.
- * When a (non-global) scope ends, all declarations made within that
- * scope are undone. To this end, shadowed declarations are kept in a
- * stack of maps (with one map for each scope) until the scope ends.
+ * In addition, a bijection between benchmark-declared names and name
+ * identifiers is built during parsing, and extended whenever a
+ * declaration or binder (of a new name) is encountered. Note that
+ * name identifiers are not necessarily unique, i.e., they do not
+ * resolve shadowing.
  *
- * Unique name identifiers are also stored in the nodes of the parse
- * tree; specifically, in their name_id field. The value of the
- * name_id field is 0 if (and only if) the node's symbol field does
- * not contain a benchmark-declared name.
- *
- * Finally, when the scrambled benchmark is printed, unique name
- * identifiers are permuted randomly before they are turned into
- * uniform names.
+ * Finally, when the scrambled benchmark is printed, name identifiers
+ * are permuted randomly before they are turned into uniform names.
  */
 
 typedef std::tr1::unordered_map<std::string, uint64_t> Name_ID_Map;
 
-// symbol table: map from benchmark-declared symbols to unique name
-// identifiers
+// a map from benchmark-declared symbols to name identifiers
 Name_ID_Map name_ids;
 
-// symbol table: information to undo declarations when a (non-global)
-// scope ends
-std::stack<Name_ID_Map*> shadow_undos;
-
-namespace scrambler {
-
-// entering a new scope
-void push_namespace()
-{
-    shadow_undos.push(new Name_ID_Map());
-}
-
-// leaving a scope
-void pop_namespace()
-{
-    if (shadow_undos.empty()) {
-        std::cerr << "ERROR pop command over an empty stack" << std::endl;
-        exit(1);
-    }
-
-    Name_ID_Map *shadow_undo = shadow_undos.top();
-    for (Name_ID_Map::iterator it = shadow_undo->begin(); it != shadow_undo->end(); ++it) {
-        if (it->second == 0) {
-            name_ids.erase(it->first);
-        } else {
-            name_ids[it->first] = it->second;
-        }
-      }
-    shadow_undos.pop();
-    delete shadow_undo;
-}
-
-} // namespace
-
 // |foo| and foo denote the same symbol in SMT-LIB, hence the need to
-// remove |...| quotes before symbol table updates and lookups
+// remove |...| quotes before symbol lookups
 const char *unquote(const char *n)
 {
     if (!n[0] || n[0] != '|') {
@@ -184,23 +141,10 @@ void set_new_name(const char *n)
 {
     n = unquote(n);
 
-    if (shadow_undos.empty()) {
-        if (name_ids.count(n) > 0) {
-            std::cerr << "ERROR duplicate name declaration at top-level: " << n << std::endl;
-            exit(1);
-        }
-    } else {
-        // store n's current id (to restore at a later namespace pop)
-        Name_ID_Map *shadow_undo = shadow_undos.top();
-        if (shadow_undo->count(n) > 0) {
-            std::cerr << "ERROR duplicate name declaration: " << n << std::endl;
-            exit(1);
-        }
-        (*shadow_undo)[n] = name_ids[n];  // 0 if n is not currently in name_ids
+    if (name_ids.find(n) == name_ids.end()) {
+        name_ids[n] = next_name_id;
+        ++next_name_id;
     }
-
-    name_ids[n] = next_name_id;
-    ++next_name_id;
 }
 
 } // namespace
@@ -239,7 +183,6 @@ void add_node(const char *s, node *n1, node *n2, node *n3, node *n4)
 
     node *ret = new node;
     ret->symbol = s;
-    ret->name_id = 0;
     ret->needs_parens = true;
 
     if (n1) {
@@ -264,7 +207,6 @@ node *make_node(const char *s, node *n1, node *n2)
     ret->needs_parens = true;
     if (s) {
         ret->symbol = s;
-        ret->name_id = get_name_id(s);
     }
     if (n1) {
         ret->children.push_back(n1);
@@ -283,7 +225,6 @@ node *make_node(const std::vector<node *> *v)
     node *ret = new node;
     ret->needs_parens = true;
     ret->symbol = "";
-    ret->name_id = 0;
     ret->children.assign(v->begin(), v->end());
     return ret;
 }
@@ -293,7 +234,6 @@ node *make_node(node *n, const std::vector<node *> *v)
     node *ret = new node;
     ret->needs_parens = true;
     ret->symbol = "";
-    ret->name_id = 0;
     ret->children.push_back(n);
     ret->children.insert(ret->children.end(), v->begin(), v->end());
     return ret;
@@ -595,11 +535,16 @@ void print_node(std::ostream &out, const scrambler::node *n, bool keep_annotatio
             out << '(';
         }
         if (!n->symbol.empty()) {
-            if (no_scramble || n->name_id == 0) {
+            if (no_scramble) {
                 out << n->symbol;
             } else {
-                assert(n->name_id < permuted_name_ids.size());
-                out << make_name(permuted_name_ids[n->name_id]);
+                uint64_t name_id = get_name_id(n->symbol.c_str());
+                if (name_id == 0) {
+                    out << n->symbol;
+                } else {
+                    assert(name_id < permuted_name_ids.size());
+                    out << make_name(permuted_name_ids[name_id]);
+                }
             }
         }
         std::string name;

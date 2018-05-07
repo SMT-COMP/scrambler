@@ -205,7 +205,6 @@ cmd_define_sort :
   {
       set_new_name($3);
       add_node("define-sort", make_node($3), make_node($5), $7);
-      pop_namespace();
       free($3);
   }
 ;
@@ -236,10 +235,6 @@ cmd_define_fun :
   }
 | '(' TK_DEFINE_FUN SYMBOL '(' quant_var_list ')' a_sort a_term ')'
   {
-      int i;
-      for (i = 0; i < $5->size(); ++i) {
-          pop_namespace();
-      }
       set_new_name($3);
       add_node("define-fun", make_node($3), make_node($5), $7, $8);
       free($3);
@@ -250,10 +245,6 @@ cmd_define_fun :
 
 cmd_push : '(' TK_PUSH NUMERAL ')'
   {
-      int n = atoi($3);
-      for (int i = 0; i < n; ++i) {
-          push_namespace();
-      }
       add_node("push", make_node($3));
       free($3);
   }
@@ -262,10 +253,6 @@ cmd_push : '(' TK_PUSH NUMERAL ')'
 
 cmd_pop : '(' TK_POP NUMERAL ')'
   {
-      int n = atoi($3);
-      for (int i = 0; i < n; ++i) {
-          pop_namespace();
-      }
       add_node("pop", make_node($3));
       free($3);
   }
@@ -424,24 +411,17 @@ plain_term :
       shuffle_list($4);
       $$ = make_node("let", make_node($4), $6);
       delete $4;
-      pop_namespace();
   }
 | '(' TK_FORALL '(' quant_var_list ')' a_term ')'
   {
-      shuffle_list($4);
+      //shuffle_list($4); DO NOT shuffle as this might affect shadowing
       $$ = make_node("forall", make_node($4), $6);
-      for (int i = 0; i < $4->size(); ++i) {
-          pop_namespace();
-      }
       delete $4;
   }
 | '(' TK_EXISTS '(' quant_var_list ')' a_term ')'
   {
-      shuffle_list($4);
+      //shuffle_list($4); DO NOT shuffle as this might affect shadowing
       $$ = make_node("exists", make_node($4), $6);
-      for (int i = 0; i < $4->size(); ++i) {
-          pop_namespace();
-      }
       delete $4;
   }
 | term_num_constant
@@ -630,7 +610,6 @@ quant_var_list :
   '(' SYMBOL a_sort ')'
   {
       $$ = new std::vector<node *>();
-      push_namespace();
       set_new_name($2);
       $$->push_back(make_node($2, $3));
       free($2);
@@ -638,7 +617,6 @@ quant_var_list :
 | quant_var_list '(' SYMBOL a_sort ')'
   {
       $$ = $1;
-      push_namespace();
       set_new_name($3);
       $$->push_back(make_node($3, $4));
       free($3);
@@ -648,7 +626,6 @@ quant_var_list :
 
 parallel_let_bindings : let_bindings
   {
-    push_namespace();
     $$ = new std::vector<scrambler::node *>();
     for (std::vector<std::pair<char *, scrambler::node *> *>::iterator it = $1->begin(); it != $1->end(); ++it) {
       set_new_name((*it)->first);
@@ -741,7 +718,6 @@ a_sort :
 sort_param_list :
   a_sort_param
   {
-      push_namespace();
       $$ = new std::vector<node *>();
       $$->push_back($1);
   }
