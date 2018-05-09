@@ -637,8 +637,8 @@ quant_var_list :
 
 parallel_let_bindings : let_bindings
   {
-    $$ = new std::vector<scrambler::node *>();
-    for (std::vector<std::pair<char *, scrambler::node *> *>::iterator it = $1->begin(); it != $1->end(); ++it) {
+    $$ = new std::vector<node *>();
+    for (std::vector<std::pair<char *, node *> *>::iterator it = $1->begin(); it != $1->end(); ++it) {
       set_new_name((*it)->first);
       $$->push_back(make_node((*it)->first, (*it)->second));
       free((*it)->first);
@@ -652,7 +652,7 @@ parallel_let_bindings : let_bindings
 let_bindings :
   let_binding
   {
-      $$ = new std::vector<std::pair<char *, scrambler::node *> *>();
+      $$ = new std::vector<std::pair<char *, node *> *>();
       $$->push_back($1);
   }
 | let_bindings let_binding
@@ -665,7 +665,7 @@ let_bindings :
 
 let_binding : '(' SYMBOL a_term ')'
   {
-      $$ = new std::pair<char *, scrambler::node *>($2, $3);
+      $$ = new std::pair<char *, node *>($2, $3);
   }
 ;
 
