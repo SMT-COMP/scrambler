@@ -99,7 +99,6 @@ using namespace scrambler;
 %token TK_GET_VALUE            "get-value"
 %token TK_EXIT                 "exit"
 
-%type <curnode> logic_name
 %type <curnode> a_sort
 %type <curnode> a_sort_param
 %type <curnode> a_term
@@ -127,7 +126,6 @@ using namespace scrambler;
 
 %destructor { free($$); } BINCONSTANT HEXCONSTANT RATCONSTANT NUMERAL SYMBOL KEYWORD STRING
 
-%destructor { delete $$; } logic_name
 %destructor { delete $$; } term_list
 %destructor { delete $$; } sort_list
 %destructor { delete $$; } sort_param_list
@@ -178,10 +176,11 @@ cmd_error :
 ;
 
 
-cmd_set_logic : '(' TK_SET_LOGIC logic_name ')'
+cmd_set_logic : '(' TK_SET_LOGIC SYMBOL ')'
   {
-      add_node("set-logic", $3);
-      set_logic($3->symbol);
+      set_logic($3);
+      add_node("set-logic", make_node($3));
+      free($3);
   }
 ;
 
@@ -667,24 +666,6 @@ let_bindings :
 let_binding : '(' SYMBOL a_term ')'
   {
       $$ = new std::pair<char *, scrambler::node *>($2, $3);
-  }
-;
-
-
-logic_name :
-  SYMBOL
-  {
-      $$ = make_node($1);
-      free($1);
-  }
-| SYMBOL '[' NUMERAL ']'
-  {
-      char *tmp = (char *)(malloc(strlen($1) + strlen($3) + 2 + 1));
-      sprintf(tmp, "%s[%s]", $1, $3);
-      $$ = make_node(tmp);
-      free(tmp);
-      free($1);
-      free($3);
   }
 ;
 
