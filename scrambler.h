@@ -35,6 +35,7 @@ namespace scrambler {
 
 struct node {
     std::string symbol;
+    bool is_name;
 
     std::vector<node *> children;
     bool needs_parens;
@@ -52,6 +53,7 @@ void add_node(const char *s,
 node *make_node(const char *s=NULL, node *n1=NULL, node *n2=NULL);
 node *make_node(const std::vector<node *> *v);
 node *make_node(node *n, const std::vector<node *> *v);
+node *make_name_node(const char *s, node *n1=NULL);
 
 void del_node(node *n);
 

@@ -183,6 +183,7 @@ void add_node(const char *s, node *n1, node *n2, node *n3, node *n4)
 
     node *ret = new node;
     ret->symbol = s;
+    ret->is_name = false;
     ret->needs_parens = true;
 
     if (n1) {
@@ -208,6 +209,7 @@ node *make_node(const char *s, node *n1, node *n2)
     if (s) {
         ret->symbol = s;
     }
+    ret->is_name = false;
     if (n1) {
         ret->children.push_back(n1);
     }
@@ -225,6 +227,7 @@ node *make_node(const std::vector<node *> *v)
     node *ret = new node;
     ret->needs_parens = true;
     ret->symbol = "";
+    ret->is_name = false;
     ret->children.assign(v->begin(), v->end());
     return ret;
 }
@@ -234,10 +237,25 @@ node *make_node(node *n, const std::vector<node *> *v)
     node *ret = new node;
     ret->needs_parens = true;
     ret->symbol = "";
+    ret->is_name = false;
     ret->children.push_back(n);
     ret->children.insert(ret->children.end(), v->begin(), v->end());
     return ret;
 }
+
+node *make_name_node(const char* s, node *n1)
+{
+    node *ret = new node;
+    assert(s);
+    ret->symbol = s;
+    ret->is_name = true;
+    ret->needs_parens = false;
+    if (n1) {
+        ret->children.push_back(n1);
+        ret->needs_parens = true;
+    }
+    return ret;
+}   
 
 void del_node(node *n)
 {
@@ -535,7 +553,7 @@ void print_node(std::ostream &out, const scrambler::node *n, bool keep_annotatio
             out << '(';
         }
         if (!n->symbol.empty()) {
-            if (no_scramble) {
+            if (no_scramble || !n->is_name) {
                 out << n->symbol;
             } else {
                 uint64_t name_id = get_name_id(n->symbol.c_str());

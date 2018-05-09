@@ -188,7 +188,7 @@ cmd_set_logic : '(' TK_SET_LOGIC SYMBOL ')'
 cmd_declare_sort : '(' TK_DECLARE_SORT SYMBOL NUMERAL ')'
   {
       set_new_name($3);
-      add_node("declare-sort", make_node($3), make_node($4));
+      add_node("declare-sort", make_name_node($3), make_node($4));
       free($4);
       free($3);
   }
@@ -199,13 +199,13 @@ cmd_define_sort :
   '(' TK_DEFINE_SORT SYMBOL '(' ')' a_sort ')'
   {
       set_new_name($3);
-      add_node("define-sort", make_node($3), make_node(), $6);
+      add_node("define-sort", make_name_node($3), make_node(), $6);
       free($3);
   }
 | '(' TK_DEFINE_SORT SYMBOL '(' sort_param_list ')' a_sort ')'
   {
       set_new_name($3);
-      add_node("define-sort", make_node($3), make_node($5), $7);
+      add_node("define-sort", make_name_node($3), make_node($5), $7);
       free($3);
   }
 ;
@@ -215,13 +215,13 @@ cmd_declare_fun :
   '(' TK_DECLARE_FUN SYMBOL '(' ')' a_sort ')'
   {
       set_new_name($3);
-      add_node("declare-fun", make_node($3), make_node(), $6);
+      add_node("declare-fun", make_name_node($3), make_node(), $6);
       free($3);
   }
 | '(' TK_DECLARE_FUN SYMBOL '(' sort_list ')' a_sort ')'
   {
       set_new_name($3);
-      add_node("declare-fun", make_node($3), make_node($5), $7);
+      add_node("declare-fun", make_name_node($3), make_node($5), $7);
       free($3);
   }
 ;
@@ -230,8 +230,8 @@ cmd_declare_fun :
 cmd_declare_const : '(' TK_DECLARE_CONST SYMBOL a_sort ')'
   {
       set_new_name($3);
-      //add_node("declare-const", make_node($3), $4);
-      add_node("declare-fun", make_node($3), make_node(), $4);
+      //add_node("declare-const", make_name_node($3), $4);
+      add_node("declare-fun", make_name_node($3), make_node(), $4);
       free($3);
   }
 ;
@@ -241,13 +241,13 @@ cmd_define_fun :
   '(' TK_DEFINE_FUN SYMBOL '(' ')' a_sort a_term ')'
   {
       set_new_name($3);
-      add_node("define-fun", make_node($3), make_node(), $6, $7);
+      add_node("define-fun", make_name_node($3), make_node(), $6, $7);
       free($3);
   }
 | '(' TK_DEFINE_FUN SYMBOL '(' quant_var_list ')' a_sort a_term ')'
   {
       set_new_name($3);
-      add_node("define-fun", make_node($3), make_node($5), $7, $8);
+      add_node("define-fun", make_name_node($3), make_node($5), $7, $8);
       free($3);
       delete $5;
   }
@@ -473,7 +473,7 @@ term_symbol :
 term_unqualified_symbol :
   SYMBOL
   {
-      $$ = make_node($1);
+      $$ = make_name_node($1);
       free($1);
   }
 | '(' TK_UNDERSCORE SYMBOL num_list ')'
@@ -622,14 +622,14 @@ quant_var_list :
   {
       $$ = new std::vector<node *>();
       set_new_name($2);
-      $$->push_back(make_node($2, $3));
+      $$->push_back(make_name_node($2, $3));
       free($2);
   }
 | quant_var_list '(' SYMBOL a_sort ')'
   {
       $$ = $1;
       set_new_name($3);
-      $$->push_back(make_node($3, $4));
+      $$->push_back(make_name_node($3, $4));
       free($3);
   }
 ;
@@ -640,7 +640,7 @@ parallel_let_bindings : let_bindings
     $$ = new std::vector<node *>();
     for (std::vector<std::pair<char *, node *> *>::iterator it = $1->begin(); it != $1->end(); ++it) {
       set_new_name((*it)->first);
-      $$->push_back(make_node((*it)->first, (*it)->second));
+      $$->push_back(make_name_node((*it)->first, (*it)->second));
       free((*it)->first);
       delete *it;
     }
@@ -687,7 +687,7 @@ sort_list :
 a_sort :
   SYMBOL
   {
-      $$ = make_node($1);
+      $$ = make_name_node($1);
       free($1);
   }
 | '(' TK_UNDERSCORE SYMBOL int_list ')'
@@ -725,7 +725,7 @@ sort_param_list :
 a_sort_param : SYMBOL
   {
       set_new_name($1);
-      $$ = make_node($1);
+      $$ = make_name_node($1);
       free($1);
   }
 ;
