@@ -56,13 +56,12 @@
 %x START_QUOTEDSYMBOL
 %option yylineno
 
-BINCONSTANT         #b[0-1]+
-HEXCONSTANT         #x[0-9a-fA-F]+
-BVCONSTANT          bv[0-9]+
-RATCONSTANT         [0-9]+\.[0-9]+
-NUMERAL                    [0-9]+
+NUMERAL             [0-9]+
+DECIMAL             [0-9]+\.[0-9]+
+HEXADECIMAL         #x[0-9a-fA-F]+
+BINARY              #b[0-1]+
 SYMBOL              [a-zA-Z0-9._+\-*=%/?!$_~&^<>@]+
-KEYWORD             :[a-zA-Z0-9._+\-*=%?!$_~&^<>@]+
+KEYWORD             :[a-zA-Z0-9._+\-*=%/?!$_~&^<>@]+
 
 %%
 ";"[^\n]*\n      { ; }
@@ -73,51 +72,48 @@ KEYWORD             :[a-zA-Z0-9._+\-*=%?!$_~&^<>@]+
 "("              |
 ")"              { return yytext[0]; }
 
-"as"             { return TK_AS; }
-"_"              { return TK_UNDERSCORE; }
-"let"            { return TK_LET; }
 "!"              { return TK_BANG; }
-"forall"         { return TK_FORALL; }
+"_"              { return TK_UNDERSCORE; }
+"as"             { return TK_AS; }
 "exists"         { return TK_EXISTS; }
+"forall"         { return TK_FORALL; }
+"let"            { return TK_LET; }
+"match"          { return TK_MATCH; }
 
-"set-logic"     { return TK_SET_LOGIC; }
-"declare-sort"  { return TK_DECLARE_SORT; }
-"define-sort"   { return TK_DEFINE_SORT; }
-"declare-fun"   { return TK_DECLARE_FUN; }
-"declare-const" { return TK_DECLARE_CONST; }
-"define-fun"    { return TK_DEFINE_FUN; }
-"push"          { return TK_PUSH; }
-"pop"           { return TK_POP; }
-"assert"        { return TK_ASSERT; }
-"check-sat"     { return TK_CHECK_SAT; }
-"get-assertions" { return TK_GET_ASSERTIONS; }
-"get-unsat-core" { return TK_GET_UNSAT_CORE; }
-"get-proof"      { return TK_GET_PROOF; }
-"set-option"     { return TK_SET_OPTION; }
-"get-info"       { return TK_GET_INFO; }
-"set-info"       { return TK_SET_INFO; }
-"get-assignment" { return TK_GET_ASSIGNMENT; }
-"get-model"      { return TK_GET_MODEL; }
-"get-value"      { return TK_GET_VALUE; }
+"assert"         { return TK_ASSERT; }
+"check-sat"      { return TK_CHECK_SAT; }
+"declare-const"  { return TK_DECLARE_CONST; }
+"declare-datatype"   { return TK_DECLARE_DATATYPE; }
+"declare-datatypes"  { return TK_DECLARE_DATATYPES; }
+"declare-fun"    { return TK_DECLARE_FUN; }
+"declare-sort"   { return TK_DECLARE_SORT; }
+"define-fun"     { return TK_DEFINE_FUN; }
+"define-sort"    { return TK_DEFINE_SORT; }
+"echo"           { return TK_ECHO; }
 "exit"           { return TK_EXIT; }
+"pop"            { return TK_POP; }
+"push"           { return TK_PUSH; }
+"set-info"       { return TK_SET_INFO; }
+"set-logic"      { return TK_SET_LOGIC; }
 
-{BINCONSTANT}  { yylval.string = c_strdup(yytext); return BINCONSTANT; }
-{HEXCONSTANT}  { yylval.string = c_strdup(yytext); return HEXCONSTANT; }
-{RATCONSTANT}  { yylval.string = c_strdup(yytext); return RATCONSTANT; }
-{BVCONSTANT}   { yylval.string = c_strdup(yytext); return BVCONSTANT; }
 {NUMERAL}      { yylval.string = c_strdup(yytext); return NUMERAL; }
+{DECIMAL}      { yylval.string = c_strdup(yytext); return DECIMAL; }
+{HEXADECIMAL}  { yylval.string = c_strdup(yytext); return HEXADECIMAL; }
+{BINARY}       { yylval.string = c_strdup(yytext); return BINARY; }
+
 {SYMBOL}       { yylval.string = c_strdup(yytext); return SYMBOL; }
 {KEYWORD}      { yylval.string = c_strdup(yytext); return KEYWORD; }
 
 \"              { yylval.buf = new std::vector<char>();
+                  yylval.buf->push_back('"');
                   BEGIN(START_STRING); }
 <START_STRING>{
-  \"\"          { yylval.buf->push_back('"'); }
+  \"\"          { yylval.buf->push_back('"');
+                  yylval.buf->push_back('"'); }
   [^\"]         { yylval.buf->push_back(yytext[0]); }
-  \"            {
-                  char *s;
+  \"            { yylval.buf->push_back('"');
                   yylval.buf->push_back('\0');
-                  s = c_strdup(&(yylval.buf->front()));
+                  char *s = c_strdup(&(yylval.buf->front()));
                   delete yylval.buf;
                   yylval.buf = NULL;
                   yylval.string = s;
@@ -129,11 +125,9 @@ KEYWORD             :[a-zA-Z0-9._+\-*=%?!$_~&^<>@]+
                   BEGIN(START_QUOTEDSYMBOL); }
 <START_QUOTEDSYMBOL>{
   [^|]        { yylval.buf->push_back(yytext[0]); }
-  \|          {
-                char *s;
-                yylval.buf->push_back('|');
+  \|          { yylval.buf->push_back('|');
                 yylval.buf->push_back('\0');
-                s = c_strdup(&(yylval.buf->front()));
+                char *s = c_strdup(&(yylval.buf->front()));
                 delete yylval.buf;
                 yylval.buf = NULL;
                 yylval.string = s;

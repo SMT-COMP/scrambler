@@ -301,7 +301,7 @@ namespace scrambler {
 void set_logic(const std::string &l)
 {
     // each benchmark contains a single set-logic command
-    if (logic != "") {
+    if (!logic.empty()) {
         std::cerr << "ERROR logic is already set" << std::endl;
         exit(1);
     }
@@ -315,7 +315,7 @@ bool logic_is_dl()  // Difference Logic: IDL, RDL
 {
     static int result = -1;
     if (result == -1) {
-        if (logic == "") {
+        if (logic.empty()) {
             std::cerr << "ERROR logic has not been set" << std::endl;
             exit(1);
         }
@@ -334,7 +334,7 @@ bool logic_is_arith()  // Arithmetic: IA, RA, IRA
 {
     static int result = -1;
     if (result == -1) {
-        if (logic == "") {
+        if (logic.empty()) {
             std::cerr << "ERROR logic has not been set" << std::endl;
             exit(1);
         }
@@ -353,7 +353,7 @@ bool logic_is_bv()  // BitVectors (BV)
 {
     static int result = -1;
     if (result == -1) {
-        if (logic == "") {
+        if (logic.empty()) {
             std::cerr << "ERROR logic has not been set" << std::endl;
             exit(1);
         }
@@ -372,7 +372,7 @@ bool logic_is_fp()  // FloatingPoint (FP)
 {
     static int result = -1;
     if (result == -1) {
-        if (logic == "") {
+        if (logic.empty()) {
             std::cerr << "ERROR logic has not been set" << std::endl;
             exit(1);
         }
@@ -391,11 +391,14 @@ namespace scrambler {
 
 bool is_commutative(const node *n)
 {
-    const std::string *curs = &(n->symbol);
-    if (curs->empty() && !n->children.empty()) {
-        curs = &(n->children[0]->symbol);
+    // *n might be a qualified identifier of the form ('as' identifier sort)
+    const std::string *symbol = &(n->symbol);
+    if (*symbol == "as") {
+        assert(n->children.size() > 0);
+        symbol = &(n->children[0]->symbol);
     }
-    const std::string &s = *curs;
+    const std::string &s = *symbol;
+    assert(!s.empty());
 
     // Core theory
     if (s == "and" || s == "or" || s == "xor" || s == "distinct") {
@@ -443,11 +446,14 @@ bool flip_antisymm(const node *n, node ** const out_n)
         return false;
     }
 
-    const std::string *curs = &(n->symbol);
-    if (curs->empty() && !n->children.empty()) {
-        curs = &(n->children[0]->symbol);
+    // *n might be a qualified identifier of the form ('as' identifier sort)
+    const std::string *symbol = &(n->symbol);
+    if (*symbol == "as") {
+        assert(n->children.size() > 0);
+        symbol = &(n->children[0]->symbol);
     }
-    const std::string &s = *curs;
+    const std::string &s = *symbol;
+    assert(!s.empty());
 
     // arithmetic (IA, RA, IRA) (but not difference logic)
     if (logic_is_arith()) {
