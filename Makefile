@@ -23,21 +23,26 @@ lexer.cpp: lexer.l
 # targets to prepare StarExec preprocessors
 
 SMT-COMP-Scrambler.tgz: scrambler
-	cp process.main process
+	cp process.main-track process
 	tar -czf SMT-COMP-Scrambler.tgz process scrambler
 	rm process
 
+SMT-COMP-Application-Scrambler.tgz: scrambler
+	cp process.application-track process
+	tar -czf SMT-COMP-Application-Scrambler.tgz process scrambler
+	rm process
+
 SMT-COMP-Unsat-Core-Scrambler.tgz: scrambler
-	cp process.unsat-core process
+	cp process.unsat-core-track process
 	tar -czf SMT-COMP-Unsat-Core-Scrambler.tgz process scrambler
 	rm process
 
 .PHONY: all clean cleanall
 
-all: scrambler SMT-COMP-Scrambler.tgz SMT-COMP-Unsat-Core-Scrambler.tgz
+all: scrambler SMT-COMP-Scrambler.tgz SMT-COMP-Application-Scrambler.tgz SMT-COMP-Unsat-Core-Scrambler.tgz
 
 clean:
 	rm -f $(OBJECTS) lexer.cpp lexer.h parser.cpp parser.h parser.output
 
 cleanall: clean
-	rm -f scrambler SMT-COMP-Scrambler.tgz SMT-COMP-Unsat-Core-Scrambler.tgz
+	rm -f scrambler SMT-COMP-Scrambler.tgz SMT-COMP-Application-Scrambler.tgz SMT-COMP-Unsat-Core-Scrambler.tgz
