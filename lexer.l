@@ -96,6 +96,9 @@ KEYWORD             :[a-zA-Z0-9._+\-*=%/?!$_~&^<>@]+
 "set-info"       { return TK_SET_INFO; }
 "set-logic"      { return TK_SET_LOGIC; }
 
+":pattern"     { return TK_PATTERN; }
+":named"       { return TK_NAMED; }
+
 {NUMERAL}      { yylval.string = c_strdup(yytext); return NUMERAL; }
 {DECIMAL}      { yylval.string = c_strdup(yytext); return DECIMAL; }
 {HEXADECIMAL}  { yylval.string = c_strdup(yytext); return HEXADECIMAL; }

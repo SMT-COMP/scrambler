@@ -94,6 +94,9 @@ using namespace scrambler;
 %token TK_SET_INFO             "set-info"
 %token TK_SET_LOGIC            "set-logic"
 
+%token TK_PATTERN       ":pattern"
+%token TK_NAMED         ":named"
+
 %type <nodelist>    sort_dec_list
 %type <curnode>     sort_dec
 %type <nodelist>    datatype_dec_list
@@ -711,17 +714,23 @@ attribute_list :
   }
 ;
 
+// the only predefined term attributes in SMT-LIB are ':named' and
+// ':pattern'
 attribute :
-  KEYWORD
+  TK_NAMED SYMBOL
   {
-      $$ = make_node($1);
-      free($1);
-  }
-| KEYWORD attribute_value
-  {
-      $$ = make_node($1, $2);
+      // :named terms are not allowed in SMT-COMP; we need to be able
+      // to parse :named assertions for the unsat-core track only.
+      // Otherwise, make_name_node($2) might be more appropriate here.
+      $$ = make_node(":named", make_node($2));
       $$->set_parens_needed(false);
-      free($1);
+      free($2);
+  }
+| TK_PATTERN '(' term_list ')'
+  {
+      $$ = make_node(":pattern", make_node($3));
+      $$->set_parens_needed(false);
+      delete $3;
   }
 ;
 
