@@ -36,7 +36,7 @@
 (assert (forall ((x Bool)) (or x (not x))))
 (assert (exists ((x Bool)) x))
 (assert (match unit ((unit true))))
-(assert (! c :keyword))
+(assert (! c :named symbol))
 
 ; datatypes
 (declare-datatypes ((Color 0)) (((red) (green) (blue))))
@@ -67,18 +67,8 @@
 (assert (forall ((x (Array Int Real))) true))
 
 ; attributes
-(assert (! c :keyword))
-(assert (! c :keyword 1234))
-(assert (! c :keyword 1234.5))
-(assert (! c :keyword #x0123456789aBcDeF))
-(assert (! c :keyword #b01))
-(assert (! c :keyword "a string"))
-(assert (! c :keyword symbol))
-(assert (! c :keyword :anotherkeyword))
-(assert (! c :keyword ()))
-(assert (! c :keyword (foo ())))
-(assert (! c :keyword (foo bar)))
-(assert (! c :keyword (foo (bar baz))))
+(assert (! c :named symbol))
+(assert (! c :pattern (c)))
 
 ; identifiers
 (assert c)
