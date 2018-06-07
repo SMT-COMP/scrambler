@@ -1,7 +1,8 @@
 /* -*- C++ -*-
  *
  * A simple scrambler for SMT-LIB 2.6 scripts
- * 
+ *
+ * Author: Aina Niemetz <aina.niemetz@gmail.com> (2018)
  * Author: Tjark Weber <tjark.weber@it.uu.se> (2015-2018)
  * Author: Alberto Griggio <griggio@fbk.eu> (2011)
  *
@@ -58,9 +59,10 @@ node *make_name_node(const char *s, node *n1=NULL);
 void del_node(node *n);
 
 void set_logic(const std::string &logic);
-bool is_commutative(const node *n);
+int is_commutative(const node *n);
 bool flip_antisymm(const node *n, node ** const out_n);
 
+void shuffle_list(std::vector<scrambler::node *> *v, size_t start, size_t end);
 void shuffle_list(std::vector<node *> *v);
 
 } // namespace scrambler

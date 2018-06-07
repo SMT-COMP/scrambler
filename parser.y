@@ -2,6 +2,7 @@
  *
  * Bison parser for the SMT-LIB 2.6 command language
  *
+ * Author: Aina Niemetz <aina.niemetz@gmail.com> (2018)
  * Author: Tjark Weber <tjark.weber@it.uu.se> (2015-2018)
  * Author: Alberto Griggio <griggio@fbk.eu> (2011)
  *
@@ -475,8 +476,10 @@ a_term :
 | '(' qual_identifier term_list ')'
   {
       node *n = $2;
-      if (is_commutative($2)) {
-          shuffle_list($3);
+      std::vector<node *> *v = $3;
+      int idx = is_commutative($2);
+      if (idx >= 0) {
+          shuffle_list(v, idx, v->size());
       } else if (flip_antisymm($2, &n)) {
           std::swap((*($3))[0], (*($3))[1]);
       }

@@ -2,6 +2,7 @@
  *
  * A simple scrambler for SMT-LIB 2.6 scripts
  *
+ * Author: Aina Niemetz <aina.niemetz@gmail.com> (2018)
  * Author: Tjark Weber <tjark.weber@it.uu.se> (2015-2018)
  * Author: Alberto Griggio <griggio@fbk.eu> (2011)
  *
@@ -269,6 +270,8 @@ void del_node(node *n)
 
 ////////////////////////////////////////////////////////////////////////////////
 
+namespace scrambler {
+
 void shuffle_list(std::vector<scrambler::node *> *v, size_t start, size_t end)
 {
     if (!no_scramble) {
@@ -279,11 +282,9 @@ void shuffle_list(std::vector<scrambler::node *> *v, size_t start, size_t end)
     }
 }
 
-namespace scrambler {
-
 void shuffle_list(std::vector<node *> *v)
 {
-    ::shuffle_list(v, 0, v->size());
+    shuffle_list(v, 0, v->size());
 }
 
 } // scrambler
@@ -389,7 +390,9 @@ bool logic_is_fp()  // FloatingPoint (FP)
 
 namespace scrambler {
 
-bool is_commutative(const node *n)
+// Return vector index >= 0 (from where the list of children is commutative)
+// if true, else -1.
+int is_commutative(const node *n)
 {
     // *n might be a qualified identifier of the form ('as' identifier sort)
     const std::string *symbol = &(n->symbol);
@@ -402,18 +405,18 @@ bool is_commutative(const node *n)
 
     // Core theory
     if (s == "and" || s == "or" || s == "xor" || s == "distinct") {
-        return true;
+        return 0;
     }
     if (!logic_is_dl()) {
         if (s == "=") {
-            return true;
+            return 0;
         }
     }
 
     // arithmetic (IA, RA, IRA) (but not difference logic)
     if (logic_is_arith()) {
         if (s == "*" || s == "+") {
-            return true;
+            return 0;
         }
     }
 
@@ -422,18 +425,21 @@ bool is_commutative(const node *n)
         if (s == "bvand" || s == "bvor" || s == "bvxor" ||
             s == "bvnand" || s == "bvnor" || s == "bvcomp" ||
             s == "bvadd" || s == "bvmul") {
-            return true;
+            return 0;
         }
     }
 
     // FloatingPoint
     if (logic_is_fp()) {
-        if (s == "fp.add" || s == "fp.mul" || s == "fp.eq") {
-            return true;
+        if (s == "fp.eq") {
+            return 0;
+        }
+        if (s == "fp.add" || s == "fp.mul") { 
+            return 1;
         }
     }
 
-    return false;
+    return -1;
 }
 
 bool flip_antisymm(const node *n, node ** const out_n)
