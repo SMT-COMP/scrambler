@@ -95,6 +95,8 @@ KEYWORD             :[a-zA-Z0-9._+\-*=%/?!$_~&^<>@]+
 "push"           { return TK_PUSH; }
 "set-info"       { return TK_SET_INFO; }
 "set-logic"      { return TK_SET_LOGIC; }
+"set-option"     { return TK_SET_OPTION; }
+"get-unsat-core" { return TK_GET_UNSAT_CORE; }
 
 ":pattern"     { return TK_PATTERN; }
 ":named"       { return TK_NAMED; }

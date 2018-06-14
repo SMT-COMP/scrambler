@@ -94,6 +94,8 @@ using namespace scrambler;
 %token TK_PUSH                 "push"
 %token TK_SET_INFO             "set-info"
 %token TK_SET_LOGIC            "set-logic"
+%token TK_SET_OPTION           "set-option"
+%token TK_GET_UNSAT_CORE       "get-unsat-core"
 
 %token TK_PATTERN       ":pattern"
 %token TK_NAMED         ":named"
@@ -199,6 +201,8 @@ command :
 | cmd_push
 | cmd_set_logic
 | cmd_set_info
+| cmd_set_option
+| cmd_get_unsat_core
 | cmd_error
 ;
 
@@ -358,6 +362,28 @@ cmd_set_logic : '(' TK_SET_LOGIC SYMBOL ')'
       set_logic($3);
       add_node("set-logic", make_node($3));
       free($3);
+  }
+;
+
+// set-option commands are not allowed in SMT-COMP; we need to be able
+// to parse "(set-option :produce-unsat-cores true)" for the unsat-
+// core track only
+cmd_set_option : '(' TK_SET_OPTION KEYWORD attribute_value ')'
+  {
+      if (strcmp($3, ":produce-unsat-cores") != 0 || $4->symbol != "true") {
+        yyerror("set-option"); // not allowed in SMT-COMP
+      }
+      //add_node("set-option", make_node($3), $4);
+      /*//*/delete $4;
+      free($3);
+  }
+;
+
+// get-unsat-core commands are not allowed in SMT-COMP; we need to be
+// able to parse them for the unsat-core track only
+cmd_get_unsat_core : '(' TK_GET_UNSAT_CORE ')'
+  {
+      //add_node("get-unsat-core");
   }
 ;
 
