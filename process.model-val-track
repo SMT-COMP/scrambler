@@ -7,4 +7,4 @@
 # $2: seed
 
 ulimit -s 131072
-./scrambler -seed "$2" -generate_model_val_benchmark true < "$1"
+./scrambler -seed "$2" -gen-model-val true < "$1"

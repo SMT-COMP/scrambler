@@ -79,14 +79,14 @@ bool no_scramble = false;
  * 3. Each (assert fmla) will be replaced by (assert (! fmla :named freshId))
  *    where freshId is some fresh identifier.
  */
-bool generate_unsat_core_benchmark = false;
+bool gen_ucore = false;
 
 /*
  * If set to true, the following modifications will be made additionally:
  * 1. The command (set-option :produce-models true) will be prepended.
  * 2. A (get-model) command will be inserted after each (check-sat) command.
  */
-bool generate_model_val_benchmark = false;
+bool gen_mval = false;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -553,7 +553,7 @@ std::string make_name(uint64_t name_id)
     return tmp.str();
 }
 
-// annotated assertions (for -generate_unsat_core_benchmark true)
+// annotated assertions (for -gen-unsat-core true)
 std::string make_annotation_name()
 {
     static uint64_t n = 1;
@@ -585,7 +585,7 @@ void print_node(std::ostream &out, const scrambler::node *n, bool keep_annotatio
             }
         }
         std::string name;
-        if (generate_unsat_core_benchmark && n->symbol == "assert") {
+        if (gen_ucore && n->symbol == "assert") {
             name = make_annotation_name();
         }
         if (!name.empty()) {
@@ -604,10 +604,10 @@ void print_node(std::ostream &out, const scrambler::node *n, bool keep_annotatio
             out << ')';
         }
         if (n->symbol == "check-sat") {
-            if (generate_unsat_core_benchmark) {
+            if (gen_ucore) {
                 // insert (get-unsat-core) after each check-sat
                 out << std::endl << "(get-unsat-core)";
-            } else if (generate_model_val_benchmark) {
+            } else if (gen_mval) {
                 // insert (get-model) after each check-sat
                 out << std::endl << "(get-model)";
             }
@@ -831,11 +831,11 @@ void usage(const char *program)
               << "        print only those (named) assertions whose name is contained in the\n"
               << "        specified FILE (default: print all assertions)\n"
               << "\n"
-              << "    -generate_unsat_core_benchmark [true|false]\n"
+              << "    -gen-unsat-core [true|false]\n"
               << "        controls whether the output is in a format suitable for the unsat-core\n"
               << "        track of SMT-COMP (default: false)\n"
               << "\n"
-              << "    -generate_model_val_benchmark [true|false]\n"
+              << "    -gen-model-val [true|false]\n"
               << "        controls whether the output is in a format suitable for the model\n"
               << "        track of SMT-COMP (default: false)\n";
     std::cout.flush();
@@ -885,21 +885,20 @@ int main(int argc, char **argv)
             create_core = true;
             core_file = argv[i+1];
             i += 2;
-        } else if (strcmp(argv[i], "-generate_unsat_core_benchmark") == 0 && i+1 < argc) {
-            if (strcmp(argv[i+1], "true") == 0) {
-                generate_unsat_core_benchmark = true;
-            } else if (strcmp(argv[i+1], "false") == 0) {
-                generate_unsat_core_benchmark = false;
+        } else if (strcmp(argv[i], "-gen-unsat-core") == 0 && i + 1 < argc) {
+            if (strcmp(argv[i + 1], "true") == 0) {
+                gen_ucore = true;
+            } else if (strcmp(argv[i + 1], "false") == 0) {
+                gen_ucore = false;
             } else {
                 usage(argv[0]);
             }
             i += 2;
-        } else if (strcmp(argv[i], "-generate_model_val_benchmark") == 0 &&
-                   i + 1 < argc) {
+        } else if (strcmp(argv[i], "-gen-model-val") == 0 && i + 1 < argc) {
             if (strcmp(argv[i + 1], "true") == 0) {
-                generate_model_val_benchmark = true;
+                gen_mval = true;
             } else if (strcmp(argv[i + 1], "false") == 0) {
-                generate_model_val_benchmark = false;
+                gen_mval = false;
             } else {
                 usage(argv[0]);
             }
@@ -918,12 +917,12 @@ int main(int argc, char **argv)
         }
     }
 
-    if (generate_unsat_core_benchmark) {
+    if (gen_ucore) {
         // prepend SMT-LIB command that enables production of unsat cores
         std::cout << "(set-option :produce-unsat-cores true)" << std::endl;
     }
 
-    if (generate_model_val_benchmark) {
+    if (gen_mval) {
         // prepend SMT-LIB command that enables production of models
         std::cout << "(set-option :produce-models true)" << std::endl;
     }
