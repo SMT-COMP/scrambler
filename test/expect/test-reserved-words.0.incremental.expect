@@ -1,4 +1,5 @@
-(set-info :smt-lib-version 2.6)
+sat
+--- BENCHMARK BEGINS HERE ---
 (set-logic ALL)
 (declare-fun |BINARY| () Bool)
 (declare-fun |DECIMAL| () Bool)

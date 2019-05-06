@@ -1,0 +1,7 @@
+(set-option :produce-unsat-cores true)
+(set-logic ALL)
+(declare-fun x1 () Bool)
+(assert (! (let ((x2 x1) (x1 x1)) true) :named a1))
+(check-sat)
+(get-unsat-core)
+(exit)

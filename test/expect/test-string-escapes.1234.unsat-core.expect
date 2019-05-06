@@ -1,0 +1,5 @@
+(set-option :produce-unsat-cores true)
+(set-logic ALL)
+(check-sat)
+(get-unsat-core)
+(exit)

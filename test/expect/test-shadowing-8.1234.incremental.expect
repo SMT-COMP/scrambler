@@ -1,0 +1,9 @@
+sat
+--- BENCHMARK BEGINS HERE ---
+(set-logic ALL)
+(define-fun x2 ((x1 Int) (x1 Int)) Bool (= x1 x1))
+(assert (x2 0 0))
+(declare-fun x1 () Bool)
+(assert x1)
+(check-sat)
+(exit)

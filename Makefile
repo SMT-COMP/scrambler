@@ -20,6 +20,9 @@ parser.cpp: parser.y lexer.cpp
 lexer.cpp: lexer.l
 	flex --header-file="lexer.h" -o $@ $<
 
+test: scrambler
+	test/run_tests.sh
+
 # targets to prepare StarExec preprocessors
 
 SMT-COMP-Scrambler.tgz: scrambler

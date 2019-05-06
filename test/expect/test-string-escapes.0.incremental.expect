@@ -1,0 +1,5 @@
+sat
+--- BENCHMARK BEGINS HERE ---
+(set-logic ALL)
+(check-sat)
+(exit)

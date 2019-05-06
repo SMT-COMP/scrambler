@@ -7,6 +7,7 @@
 (set-logic AUFBVDTNIRA)
 
 ; commands
+(set-info :status sat)
 (assert true)
 (check-sat)
 (declare-const c Bool)

@@ -44,5 +44,6 @@
 (set-info :echo """
 \\\")
 (set-logic ALL)
+(set-info :status sat)
 (check-sat)
 (exit)
