@@ -2,9 +2,9 @@
  *
  * A simple scrambler for SMT-LIB 2.6 scripts
  *
- * Author: Aina Niemetz <aina.niemetz@gmail.com> (2018)
- * Author: Tjark Weber <tjark.weber@it.uu.se> (2015-2018)
- * Author: Alberto Griggio <griggio@fbk.eu> (2011)
+ * Copyright (C) 2018-2019 Aina Niemetz
+ * Copyright (C) 2015-2018 Tjark Weber
+ * Copyright (C) 2011 Alberto Griggio
  *
  * Copyright (C) 2011 Alberto Griggio
  *
@@ -80,6 +80,13 @@ bool no_scramble = false;
  *    where freshId is some fresh identifier.
  */
 bool generate_unsat_core_benchmark = false;
+
+/*
+ * If set to true, the following modifications will be made additionally:
+ * 1. The command (set-option :produce-models true) will be prepended.
+ * 2. A (get-model) command will be inserted after each (check-sat) command.
+ */
+bool generate_model_val_benchmark = false;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -596,9 +603,14 @@ void print_node(std::ostream &out, const scrambler::node *n, bool keep_annotatio
         if (n->needs_parens) {
             out << ')';
         }
-        if (generate_unsat_core_benchmark && n->symbol == "check-sat") {
-            // insert (get-unsat-core) after each check-sat
-            out << std::endl << "(get-unsat-core)";
+        if (n->symbol == "check-sat") {
+            if (generate_unsat_core_benchmark) {
+                // insert (get-unsat-core) after each check-sat
+                out << std::endl << "(get-unsat-core)";
+            } else if (generate_model_val_benchmark) {
+                // insert (get-model) after each check-sat
+                out << std::endl << "(get-model)";
+            }
         }
     }
 }
@@ -821,6 +833,10 @@ void usage(const char *program)
               << "\n"
               << "    -generate_unsat_core_benchmark [true|false]\n"
               << "        controls whether the output is in a format suitable for the unsat-core\n"
+              << "        track of SMT-COMP (default: false)\n"
+              << "\n"
+              << "    -generate_model_val_benchmark [true|false]\n"
+              << "        controls whether the output is in a format suitable for the model\n"
               << "        track of SMT-COMP (default: false)\n";
     std::cout.flush();
     exit(1);
@@ -878,6 +894,16 @@ int main(int argc, char **argv)
                 usage(argv[0]);
             }
             i += 2;
+        } else if (strcmp(argv[i], "-generate_model_val_benchmark") == 0 &&
+                   i + 1 < argc) {
+            if (strcmp(argv[i + 1], "true") == 0) {
+                generate_model_val_benchmark = true;
+            } else if (strcmp(argv[i + 1], "false") == 0) {
+                generate_model_val_benchmark = false;
+            } else {
+                usage(argv[0]);
+            }
+            i += 2;
         } else {
             usage(argv[0]);
         }
@@ -895,6 +921,11 @@ int main(int argc, char **argv)
     if (generate_unsat_core_benchmark) {
         // prepend SMT-LIB command that enables production of unsat cores
         std::cout << "(set-option :produce-unsat-cores true)" << std::endl;
+    }
+
+    if (generate_model_val_benchmark) {
+        // prepend SMT-LIB command that enables production of models
+        std::cout << "(set-option :produce-models true)" << std::endl;
     }
 
     while (!std::cin.eof()) {

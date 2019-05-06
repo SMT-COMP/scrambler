@@ -2,7 +2,7 @@ This is the official SMT-COMP benchmark scrambler for SMT-COMP benchmarks.
 
 License: MIT
 
-Copyright (C) 2018 Aina Niemetz <aina.niemetz@gmail.com>
+Copyright (C) 2018-2019 Aina Niemetz <aina.niemetz@gmail.com>
 Copyright (C) 2015-2018 Tjark Weber <tjark.weber@it.uu.se>
 Copyright (C) 2011 Alberto Griggio <griggio@fbk.eu>
 

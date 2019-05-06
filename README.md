@@ -44,6 +44,15 @@ ulimit -s 131072
 ./scrambler -seed <seed> < <benchmark>
 ```
 
+#### Model-Validation Track
+
+See [process.model-val-track](process.model-val-track).
+
+```
+ulimit -s 131072
+./scrambler -seed <seed> -generate_model_val_benchmark true < <benchmark>
+```
+
 #### Unsat-Core Track
 
 See [process.unsat-core-track](process.unsat-core-track).

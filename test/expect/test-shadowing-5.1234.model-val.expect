@@ -1,0 +1,8 @@
+(set-option :produce-models true)
+(set-logic ALL)
+(declare-fun x1 () Bool)
+(assert x1)
+(assert (let ((x2 x1) (x1 x1)) x1))
+(check-sat)
+(get-model)
+(exit)
