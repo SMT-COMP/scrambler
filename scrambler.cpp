@@ -28,8 +28,6 @@
  */
 
 #include "scrambler.h"
-#include <tr1/unordered_map>
-#include <tr1/unordered_set>
 #include <sstream>
 #include <stdlib.h>
 #include <stdint.h>
@@ -42,6 +40,8 @@
 #include <assert.h>
 #include <ctype.h>
 #include <stack>
+#include <unordered_map>
+#include <unordered_set>
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -117,7 +117,7 @@ bool gen_mval = false;
  * are permuted randomly before they are turned into uniform names.
  */
 
-typedef std::tr1::unordered_map<std::string, uint64_t> Name_ID_Map;
+typedef std::unordered_map<std::string, uint64_t> Name_ID_Map;
 
 // a map from benchmark-declared symbols to name identifiers
 Name_ID_Map name_ids;
@@ -700,7 +700,7 @@ void print_scrambled(std::ostream &out, bool keep_annotations)
  * -core
  */
 
-typedef std::tr1::unordered_set<std::string> StringSet;
+typedef std::unordered_set<std::string> StringSet;
 
 bool parse_core(std::istream &src, StringSet &out)
 {
@@ -749,7 +749,7 @@ bool parse_core(std::istream &src, StringSet &out)
 std::string get_named_annot(scrambler::node *root)
 {
     std::vector<scrambler::node *> to_process;
-    std::tr1::unordered_set<scrambler::node *> seen;
+    std::unordered_set<scrambler::node *> seen;
 
     to_process.push_back(root);
     while (!to_process.empty()) {
