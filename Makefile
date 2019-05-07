@@ -1,4 +1,4 @@
-CXX = g++ -D_GLIBCXX_USE_CXX11_ABI=0
+CXX = g++ -D_GLIBCXX_USE_CXX11_ABI=0 -std=c++11
 CXXFLAGS = -g -O3
 LDFLAGS = -g -static
 
