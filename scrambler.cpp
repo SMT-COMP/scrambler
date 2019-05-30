@@ -558,7 +558,7 @@ std::string make_annotation_name()
 {
     static uint64_t n = 1;
     std::ostringstream tmp;
-    tmp << "a" << n;
+    tmp << "smtcomp" << n;
     ++n;
     return tmp.str();
 }

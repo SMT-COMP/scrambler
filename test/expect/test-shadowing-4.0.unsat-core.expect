@@ -1,7 +1,7 @@
 (set-option :produce-unsat-cores true)
 (set-logic ALL)
 (declare-fun x () Bool)
-(assert (! (let ((x x) (y x)) true) :named a1))
+(assert (! (let ((x x) (y x)) true) :named smtcomp1))
 (check-sat)
 (get-unsat-core)
 (exit)
