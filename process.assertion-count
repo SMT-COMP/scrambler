@@ -1,0 +1,10 @@
+#!/bin/sh
+
+# This is a wrapper script that allows the scrambler to be used as a
+# preprocessor (for the unsat-core track of SMT-COMP) on StarExec.
+
+# $1: benchmark filename
+# $2: seed
+
+ulimit -s 131072
+./scrambler -seed "$2" -count-asrts true < "$1" 2>&1

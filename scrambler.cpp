@@ -99,6 +99,11 @@ bool support_non_smtcomp = false;
  */
 bool support_z3 = false;
 
+/*
+ * If set to true, the system prints the number of assertions to stdout
+ */
+bool count_asrts = false;
+
 ////////////////////////////////////////////////////////////////////////////////
 
 /*
@@ -863,7 +868,13 @@ void usage(const char *program)
               << "    -support-z3 [true|false]\n"
               << "        controls whether to support non-SMTLIB commands that "
                  "are supported\n"
-              << "        by Z3 (default: false)\n";
+              << "        by Z3 (default: false)\n"
+              << "        controls whether the output is in a format suitable for the model\n"
+              << "        track of SMT-COMP (default: false)\n"
+              << "\n"
+              << "    -count-asrts [true|false]\n"
+              << "        controls whether the number of assertions found in the benchmark\n"
+              << "        is printed to stderr (default: false)\n";
     std::cout.flush();
     exit(1);
 }
@@ -944,6 +955,13 @@ int main(int argc, char **argv)
                 support_z3 = true;
             } else if (strcmp(argv[i + 1], "false") == 0) {
                 support_z3 = false;
+            }
+            i += 2;
+        } else if (strcmp(argv[i], "-count-asrts") == 0 && i + 1 < argc) {
+            if (strcmp(argv[i + 1], "true") == 0) {
+                count_asrts = true;
+            } else if (strcmp(argv[i + 1], "false") == 0) {
+                count_asrts = false;
             } else {
                 usage(argv[0]);
             }
@@ -970,6 +988,20 @@ int main(int argc, char **argv)
     if (gen_mval) {
         // prepend SMT-LIB command that enables production of models
         std::cout << "(set-option :produce-models true)" << std::endl;
+    }
+
+    if (count_asrts) {
+        while (!std::cin.eof()) {
+            yyparse();
+        }
+        int asrt_count = 0;
+        for (std::vector<scrambler::node*>::iterator it = commands.begin(); it != commands.end(); ++it) {
+            if ((*it)->symbol == "assert") {
+                asrt_count++;
+            }
+        }
+        std::cerr << "; Number of assertions: " << asrt_count << "\n";
+        exit(0);
     }
 
     while (!std::cin.eof()) {
