@@ -9,7 +9,7 @@
 # extract the expected results of check-sat commands and prepend them
 # to the scrambled benchmark (in their original order) -- this format
 # is expected by the trace executor
-grep 'set-info :status' "$1"|sed 's/(set-info :status \(.*\))/\1/'
+grep -o "(set-info :status \(sat\|unsat\|unknown\))" "$1"|sed 's/(set-info :status \(.*\))/\1/'
 echo "--- BENCHMARK BEGINS HERE ---"
 ulimit -s 131072
 ./scrambler -seed "$2" < "$1"
