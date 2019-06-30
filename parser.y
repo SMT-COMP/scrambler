@@ -33,6 +33,7 @@
 #include "lexer.h"
 #include <limits.h>
 #include <assert.h>
+#include <algorithm>
 #include <iostream>
 #include <utility>
 
@@ -507,7 +508,7 @@ a_term :
       if (idx >= 0) {
           shuffle_list(v, idx, v->size());
       } else if (flip_antisymm($2, &n)) {
-          std::swap((*($3))[0], (*($3))[1]);
+          std::reverse(v->begin(), v->end());
       }
       $$ = make_node(n, $3);
       if (n != $2) {
