@@ -44,6 +44,8 @@ void yyerror(const char *s);
 
 using namespace scrambler;
 
+extern bool support_non_standard;
+
 %}
 
 %locations
@@ -100,6 +102,18 @@ using namespace scrambler;
 
 %token TK_PATTERN       ":pattern"
 %token TK_NAMED         ":named"
+
+// begin non-standard tokens
+
+%token TK_RESET         "reset"
+%token TK_QID           ":qid"
+%token TK_NOPATTERN     ":no-pattern"
+%token TK_SKOLEMID      ":skolemid"
+%token TK_LBLPOS        ":lblpos"
+%token TK_LBLNEG        ":lblneg"
+%token TK_WEIGHT        ":weight"
+
+// end non-standard tokens
 
 %type <nodelist>    sort_dec_list
 %type <curnode>     sort_dec
@@ -200,6 +214,7 @@ command :
 | cmd_exit
 | cmd_pop
 | cmd_push
+| cmd_reset // non-standard
 | cmd_set_logic
 | cmd_set_info
 | cmd_set_option
@@ -344,6 +359,16 @@ cmd_push : '(' TK_PUSH NUMERAL ')'
   }
 ;
 
+// z3
+cmd_reset : '(' TK_RESET ')'
+  {
+      if (!support_non_standard) {
+          yyerror("Non-standard command: reset"); // not allowed in SMT-COMP
+      }
+      add_node("reset");
+  }
+;
+
 cmd_set_info :
   '(' TK_SET_INFO KEYWORD ')'
   {
@@ -371,8 +396,10 @@ cmd_set_logic : '(' TK_SET_LOGIC SYMBOL ')'
 // core track only
 cmd_set_option : '(' TK_SET_OPTION KEYWORD attribute_value ')'
   {
-      if (strcmp($3, ":produce-unsat-cores") != 0 || $4->symbol != "true") {
-        yyerror("set-option"); // not allowed in SMT-COMP
+      if (!support_non_standard) {
+          if (strcmp($3, ":produce-unsat-cores") != 0 || $4->symbol != "true") {
+            yyerror("set-option"); // not allowed in SMT-COMP
+          }
       }
       //add_node("set-option", make_node($3), $4);
       /*//*/delete $4;
@@ -761,6 +788,67 @@ attribute :
       $$ = make_node(":pattern", make_node($3));
       $$->set_parens_needed(false);
       delete $3;
+  }
+| TK_QID SYMBOL
+  {
+      // z3
+      if (!support_non_standard) {
+          yyerror("Non-standard attribute: :qid"); // not allowed in SMT-COMP
+      }
+      set_new_name($2);
+      $$ = make_node(":qid", make_name_node($2));
+      $$->set_parens_needed(false);
+      delete $2;
+  }
+| TK_NOPATTERN '(' term_list ')'
+  {
+      // z3
+      if (!support_non_standard) {
+          yyerror("Non-standard attribute: :no-pattern"); // not allowed in SMT-COMP
+      }
+      $$ = make_node(":no-pattern", make_node($3));
+      $$->set_parens_needed(false);
+      delete $3;
+  }
+| TK_SKOLEMID SYMBOL
+  {
+      // z3
+      if (!support_non_standard) {
+          yyerror("Non-standard attribute: :skolemid"); // not allowed in SMT-COMP
+      }
+      $$ = make_node(":skolemid", make_node($2));
+      $$->set_parens_needed(false);
+      delete $2;
+  }
+| TK_LBLPOS SYMBOL
+  {
+      // z3
+      if (!support_non_standard) {
+          yyerror("Non-standard attribute: :lblpos"); // not allowed in SMT-COMP
+      }
+      $$ = make_node(":lblpos", make_node($2));
+      $$->set_parens_needed(false);
+      delete $2;
+  }
+| TK_LBLNEG SYMBOL
+  {
+      // z3
+      if (!support_non_standard) {
+          yyerror("Non-standard attribute: :lblneg"); // not allowed in SMT-COMP
+      }
+      $$ = make_node(":lblneg", make_node($2));
+      $$->set_parens_needed(false);
+      delete $2;
+  }
+| TK_WEIGHT NUMERAL
+  {
+      // z3
+      if (!support_non_standard) {
+          yyerror("Non-standard attribute: :weight"); // not allowed in SMT-COMP
+      }
+      $$ = make_node(":weight", make_node($2));
+      $$->set_parens_needed(false);
+      delete $2;
   }
 ;
 

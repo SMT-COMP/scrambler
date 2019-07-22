@@ -88,6 +88,17 @@ bool gen_ucore = false;
  */
 bool gen_mval = false;
 
+/*
+ * If set to true, print the map of renamings
+ */
+bool print_name_ids = false;
+
+
+/*
+ * If set to true, support smtlib files that are not complying with SMT-COMP
+ */
+bool support_non_standard = false;
+
 ////////////////////////////////////////////////////////////////////////////////
 
 /*
@@ -814,6 +825,15 @@ char *c_strdup(const char *s)
     return ret;
 }
 
+void do_print_name_ids()
+{
+    for (auto elem : name_ids) {
+       std::cout << elem.first << " "
+                 << elem.second
+                 << "\n";
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 void usage(const char *program)
@@ -837,7 +857,16 @@ void usage(const char *program)
               << "\n"
               << "    -gen-model-val [true|false]\n"
               << "        controls whether the output is in a format suitable for the model\n"
-              << "        track of SMT-COMP (default: false)\n";
+              << "        track of SMT-COMP (default: false)\n"
+              << "\n"
+              << "    -print-name-ids [true|false]\n"
+              << "        controls whether to print the renamings\n"
+              << "        (default: false)\n"
+              << "\n"
+              << "    -support-non-standard [true|false]\n"
+              << "        controls whether to support some non-standard commands\n"
+              << "        that are not part of SMT-COMP\n"
+              << "        (default: false)\n";
     std::cout.flush();
     exit(1);
 }
@@ -903,6 +932,24 @@ int main(int argc, char **argv)
                 usage(argv[0]);
             }
             i += 2;
+        } else if (strcmp(argv[i], "-print-name-ids") == 0 && i + 1 < argc) {
+            if (strcmp(argv[i + 1], "true") == 0) {
+                print_name_ids = true;
+            } else if (strcmp(argv[i + 1], "false") == 0) {
+                print_name_ids = false;
+            } else {
+                usage(argv[0]);
+            }
+            i += 2;
+        } else if (strcmp(argv[i], "-support-non-standard") == 0 && i + 1 < argc) {
+            if (strcmp(argv[i + 1], "true") == 0) {
+                support_non_standard = true;
+            } else if (strcmp(argv[i + 1], "false") == 0) {
+                support_non_standard = false;
+            } else {
+                usage(argv[0]);
+            }
+            i += 2;
         } else {
             usage(argv[0]);
         }
@@ -945,5 +992,8 @@ int main(int argc, char **argv)
         print_scrambled(std::cout, keep_annotations);
     }
 
+    if (print_name_ids) {
+        do_print_name_ids();
+    }
     return 0;
 }
