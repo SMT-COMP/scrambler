@@ -44,7 +44,9 @@ void yyerror(const char *s);
 
 using namespace scrambler;
 
-extern bool support_non_standard;
+extern bool support_non_smtcomp;
+
+extern bool support_z3;
 
 %}
 
@@ -103,7 +105,7 @@ extern bool support_non_standard;
 %token TK_PATTERN       ":pattern"
 %token TK_NAMED         ":named"
 
-// begin non-standard tokens
+// begin non-smtcomp tokens
 
 %token TK_RESET         "reset"
 %token TK_QID           ":qid"
@@ -113,7 +115,7 @@ extern bool support_non_standard;
 %token TK_LBLNEG        ":lblneg"
 %token TK_WEIGHT        ":weight"
 
-// end non-standard tokens
+// end non-smtcomp tokens
 
 %type <nodelist>    sort_dec_list
 %type <curnode>     sort_dec
@@ -214,7 +216,7 @@ command :
 | cmd_exit
 | cmd_pop
 | cmd_push
-| cmd_reset // non-standard
+| cmd_reset
 | cmd_set_logic
 | cmd_set_info
 | cmd_set_option
@@ -359,11 +361,12 @@ cmd_push : '(' TK_PUSH NUMERAL ')'
   }
 ;
 
-// z3
 cmd_reset : '(' TK_RESET ')'
   {
-      if (!support_non_standard) {
-          yyerror("Non-standard command: reset"); // not allowed in SMT-COMP
+      if (!support_non_smtcomp) {
+          // not allowed in SMT-COMP
+          yyerror("Encountered non-SMT-COMP command: 'reset'. Maybe you\
+ want to re-run with '-support-non-smtcomp true'.");
       }
       add_node("reset");
   }
@@ -396,9 +399,11 @@ cmd_set_logic : '(' TK_SET_LOGIC SYMBOL ')'
 // core track only
 cmd_set_option : '(' TK_SET_OPTION KEYWORD attribute_value ')'
   {
-      if (!support_non_standard) {
+      if (!support_non_smtcomp) {
           if (strcmp($3, ":produce-unsat-cores") != 0 || $4->symbol != "true") {
-            yyerror("set-option"); // not allowed in SMT-COMP
+            // not allowed in SMT-COMP
+            yyerror("Encountered non-SMT-COMP command: 'set-option'. Maybe you\
+ want to re-run with '-support-non-smtcomp true'.");
           }
       }
       //add_node("set-option", make_node($3), $4);
@@ -792,8 +797,9 @@ attribute :
 | TK_QID SYMBOL
   {
       // z3
-      if (!support_non_standard) {
-          yyerror("Non-standard attribute: :qid"); // not allowed in SMT-COMP
+      if (!support_z3) {
+          yyerror("Encountered z3-specific attribute: ':qid'. Maybe you\
+ want to re-run with '-support-z3 true'."); // not allowed in SMT-COMP
       }
       set_new_name($2);
       $$ = make_node(":qid", make_name_node($2));
@@ -803,8 +809,9 @@ attribute :
 | TK_NOPATTERN '(' term_list ')'
   {
       // z3
-      if (!support_non_standard) {
-          yyerror("Non-standard attribute: :no-pattern"); // not allowed in SMT-COMP
+      if (!support_z3) {
+          yyerror("Encountered z3-specific attribute: ':no-pattern'. Maybe you\
+ want to re-run with '-support-z3 true'."); // not allowed in SMT-COMP
       }
       $$ = make_node(":no-pattern", make_node($3));
       $$->set_parens_needed(false);
@@ -813,8 +820,9 @@ attribute :
 | TK_SKOLEMID SYMBOL
   {
       // z3
-      if (!support_non_standard) {
-          yyerror("Non-standard attribute: :skolemid"); // not allowed in SMT-COMP
+      if (!support_z3) {
+          yyerror("Encountered z3-specific attribute: ':skolemid'. Maybe you\
+ want to re-run with '-support-z3 true'."); // not allowed in SMT-COMP
       }
       $$ = make_node(":skolemid", make_node($2));
       $$->set_parens_needed(false);
@@ -823,8 +831,9 @@ attribute :
 | TK_LBLPOS SYMBOL
   {
       // z3
-      if (!support_non_standard) {
-          yyerror("Non-standard attribute: :lblpos"); // not allowed in SMT-COMP
+      if (!support_z3) {
+          yyerror("Encountered z3-specific attribute: ':lblpos'. Maybe you\
+ want to re-run with '-support-z3 true'."); // not allowed in SMT-COMP
       }
       $$ = make_node(":lblpos", make_node($2));
       $$->set_parens_needed(false);
@@ -833,8 +842,9 @@ attribute :
 | TK_LBLNEG SYMBOL
   {
       // z3
-      if (!support_non_standard) {
-          yyerror("Non-standard attribute: :lblneg"); // not allowed in SMT-COMP
+      if (!support_z3) {
+          yyerror("Encountered z3-specific attribute: ':lblneg'. Maybe you\
+ want to re-run with '-support-z3 true'."); // not allowed in SMT-COMP
       }
       $$ = make_node(":lblneg", make_node($2));
       $$->set_parens_needed(false);
@@ -843,8 +853,9 @@ attribute :
 | TK_WEIGHT NUMERAL
   {
       // z3
-      if (!support_non_standard) {
-          yyerror("Non-standard attribute: :weight"); // not allowed in SMT-COMP
+      if (!support_z3) {
+          yyerror("Encountered z3-specific attribute: ':weight'. Maybe you\
+ want to re-run with '-support-z3 true'."); // not allowed in SMT-COMP
       }
       $$ = make_node(":weight", make_node($2));
       $$->set_parens_needed(false);

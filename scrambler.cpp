@@ -95,9 +95,15 @@ bool print_name_ids = false;
 
 
 /*
- * If set to true, support smtlib files that are not complying with SMT-COMP
+ * If set to true, support SMTLIB files that have features not supported by
+ * SMTCOMP
  */
-bool support_non_standard = false;
+bool support_non_smtcomp = false;
+
+/*
+ * If set to true, support SMTLIB files that have Z3-specific features
+ */
+bool support_z3 = false;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -863,10 +869,13 @@ void usage(const char *program)
               << "        controls whether to print the renamings\n"
               << "        (default: false)\n"
               << "\n"
-              << "    -support-non-standard [true|false]\n"
-              << "        controls whether to support some non-standard commands\n"
-              << "        that are not part of SMT-COMP\n"
-              << "        (default: false)\n";
+              << "    -support-non-smtcomp [true|false]\n"
+              << "        controls whether to support SMTLIB commands that are not supported\n"
+              << "        by SMTCOMP (default: false)\n"
+              << "\n"
+              << "    -support-z3 [true|false]\n"
+              << "        controls whether to support non-SMTLIB commands that are supported\n"
+              << "        by Z3 (default: false)\n";
     std::cout.flush();
     exit(1);
 }
@@ -941,11 +950,20 @@ int main(int argc, char **argv)
                 usage(argv[0]);
             }
             i += 2;
-        } else if (strcmp(argv[i], "-support-non-standard") == 0 && i + 1 < argc) {
+        } else if (strcmp(argv[i], "-support-non-smtcomp") == 0 && i + 1 < argc) {
             if (strcmp(argv[i + 1], "true") == 0) {
-                support_non_standard = true;
+                support_non_smtcomp = true;
             } else if (strcmp(argv[i + 1], "false") == 0) {
-                support_non_standard = false;
+                support_non_smtcomp = false;
+            } else {
+                usage(argv[0]);
+            }
+            i += 2;
+        } else if (strcmp(argv[i], "-support-z3") == 0 && i + 1 < argc) {
+            if (strcmp(argv[i + 1], "true") == 0) {
+                support_z3 = true;
+            } else if (strcmp(argv[i + 1], "false") == 0) {
+                support_z3 = false;
             } else {
                 usage(argv[0]);
             }
