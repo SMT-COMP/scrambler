@@ -365,8 +365,8 @@ cmd_reset : '(' TK_RESET ')'
   {
       if (!support_non_smtcomp) {
           // not allowed in SMT-COMP
-          yyerror("Encountered non-SMT-COMP command: 'reset'. Maybe you\
- want to re-run with '-support-non-smtcomp true'.");
+          yyerror("Encountered non-SMT-COMP command: 'reset'. Maybe you "
+                  "want to re-run with '-support-non-smtcomp true'.");
       }
       add_node("reset");
   }
@@ -402,8 +402,8 @@ cmd_set_option : '(' TK_SET_OPTION KEYWORD attribute_value ')'
       if (!support_non_smtcomp) {
           if (strcmp($3, ":produce-unsat-cores") != 0 || $4->symbol != "true") {
             // not allowed in SMT-COMP
-            yyerror("Encountered non-SMT-COMP command: 'set-option'. Maybe you\
- want to re-run with '-support-non-smtcomp true'.");
+            yyerror("Encountered non-SMT-COMP command: 'set-option'. Maybe you "
+                    "want to re-run with '-support-non-smtcomp true'.");
           }
       }
       //add_node("set-option", make_node($3), $4);
@@ -798,8 +798,9 @@ attribute :
   {
       // z3
       if (!support_z3) {
-          yyerror("Encountered z3-specific attribute: ':qid'. Maybe you\
- want to re-run with '-support-z3 true'."); // not allowed in SMT-COMP
+          // not allowed in SMT-COMP
+          yyerror("Encountered z3-specific attribute: ':qid'. Maybe you "
+                  "want to re-run with '-support-z3 true'.");
       }
       set_new_name($2);
       $$ = make_node(":qid", make_name_node($2));
@@ -810,8 +811,9 @@ attribute :
   {
       // z3
       if (!support_z3) {
-          yyerror("Encountered z3-specific attribute: ':no-pattern'. Maybe you\
- want to re-run with '-support-z3 true'."); // not allowed in SMT-COMP
+          // not allowed in SMT-COMP
+          yyerror("Encountered z3-specific attribute: ':no-pattern'. Maybe you "
+                  "want to re-run with '-support-z3 true'.");
       }
       $$ = make_node(":no-pattern", make_node($3));
       $$->set_parens_needed(false);
@@ -821,8 +823,9 @@ attribute :
   {
       // z3
       if (!support_z3) {
-          yyerror("Encountered z3-specific attribute: ':skolemid'. Maybe you\
- want to re-run with '-support-z3 true'."); // not allowed in SMT-COMP
+          // not allowed in SMT-COMP
+          yyerror("Encountered z3-specific attribute: ':skolemid'. Maybe you "
+                  "want to re-run with '-support-z3 true'.");
       }
       $$ = make_node(":skolemid", make_node($2));
       $$->set_parens_needed(false);
@@ -832,8 +835,9 @@ attribute :
   {
       // z3
       if (!support_z3) {
-          yyerror("Encountered z3-specific attribute: ':lblpos'. Maybe you\
- want to re-run with '-support-z3 true'."); // not allowed in SMT-COMP
+          // not allowed in SMT-COMP
+          yyerror("Encountered z3-specific attribute: ':lblpos'. Maybe you "
+                  "want to re-run with '-support-z3 true'.");
       }
       $$ = make_node(":lblpos", make_node($2));
       $$->set_parens_needed(false);
@@ -843,8 +847,9 @@ attribute :
   {
       // z3
       if (!support_z3) {
-          yyerror("Encountered z3-specific attribute: ':lblneg'. Maybe you\
- want to re-run with '-support-z3 true'."); // not allowed in SMT-COMP
+          // not allowed in SMT-COMP
+          yyerror("Encountered z3-specific attribute: ':lblneg'. Maybe you "
+                  "want to re-run with '-support-z3 true'.");
       }
       $$ = make_node(":lblneg", make_node($2));
       $$->set_parens_needed(false);
@@ -854,8 +859,9 @@ attribute :
   {
       // z3
       if (!support_z3) {
-          yyerror("Encountered z3-specific attribute: ':weight'. Maybe you\
- want to re-run with '-support-z3 true'."); // not allowed in SMT-COMP
+          // not allowed in SMT-COMP
+          yyerror("Encountered z3-specific attribute: ':weight'. Maybe you "
+                  "want to re-run with '-support-z3 true'.");
       }
       $$ = make_node(":weight", make_node($2));
       $$->set_parens_needed(false);
