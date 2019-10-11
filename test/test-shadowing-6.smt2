@@ -1,7 +1,0 @@
-(set-logic ALL)
-(set-info :status sat)
-(declare-fun x () Bool)
-(assert (forall ((x Int) (x Int)) (= x x)))
-(assert x)
-(check-sat)
-(exit)
