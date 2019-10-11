@@ -5,7 +5,8 @@
 
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 TESTS_SMT_COMP_DIR="${SCRIPT_DIR}/smt-comp"
-EXPECT_SMT_COMP_DIR=${TESTS_SMT_COMP_DIR}/expect
+TESTS_NON_SMT_COMP_DIR="${SCRIPT_DIR}/extensions/non-smtcomp"
+TESTS_Z3_DIR="${SCRIPT_DIR}/extensions/z3"
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 NOCOLOR='\033[0m'
@@ -19,7 +20,7 @@ runtest()
 		echo ${test}
 		tname=`basename $test`
 		tname=${tname%.*}
-		result=$(diff <($2  ${test} $3) ${EXPECT_SMT_COMP_DIR}/${tname}.$3.$4.expect)
+		result=$(diff <($2  ${test} $3) $1/expect/${tname}.$3.$4.expect)
 		if [ ! -z "$result" ]
     then
 			echo -e "${RED}error:${NOCOLOR} Difference between expected and actual result:"
@@ -41,6 +42,13 @@ runtest ${TESTS_SMT_COMP_DIR} ${SCRIPT_DIR}/../process.unsat-core-track 1234 uns
 echo -e "\nRun model-validation track scrambler..."
 runtest ${TESTS_SMT_COMP_DIR} ${SCRIPT_DIR}/../process.model-val-track 0 model-val
 runtest ${TESTS_SMT_COMP_DIR} ${SCRIPT_DIR}/../process.model-val-track 1234 model-val
+
+echo -e "\nRun non-SMTCOMP scrambler..."
+runtest ${TESTS_NON_SMT_COMP_DIR} ${SCRIPT_DIR}/../process.non-smtcomp 0 non-smtcomp
+runtest ${TESTS_NON_SMT_COMP_DIR} ${SCRIPT_DIR}/../process.non-smtcomp 1234 non-smtcomp
+echo -e "\nRun Z3 scrambler..."
+runtest ${TESTS_Z3_DIR} ${SCRIPT_DIR}/../process.z3 0 z3
+runtest ${TESTS_Z3_DIR} ${SCRIPT_DIR}/../process.z3 1234 z3
 
 if [ $exitcode -ne 0 ]
 then

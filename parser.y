@@ -405,9 +405,10 @@ cmd_set_option : '(' TK_SET_OPTION KEYWORD attribute_value ')'
             yyerror("Encountered non-SMT-COMP command: 'set-option'. Maybe you "
                     "want to re-run with '-support-non-smtcomp true'.");
           }
+          delete $4;
+      } else {
+        add_node("set-option", make_node($3), $4);
       }
-      //add_node("set-option", make_node($3), $4);
-      /*//*/delete $4;
       free($3);
   }
 ;
@@ -827,7 +828,8 @@ attribute :
           yyerror("Encountered z3-specific attribute: ':skolemid'. Maybe you "
                   "want to re-run with '-support-z3 true'.");
       }
-      $$ = make_node(":skolemid", make_node($2));
+      set_new_name($2);
+      $$ = make_node(":skolemid", make_name_node($2));
       $$->set_parens_needed(false);
       delete $2;
   }
