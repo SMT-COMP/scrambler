@@ -89,11 +89,6 @@ bool gen_ucore = false;
 bool gen_mval = false;
 
 /*
- * If set to true, print the map of renamings
- */
-bool print_name_ids = false;
-
-/*
  * If set to true, support SMTLIB files that have features not supported by
  * SMTCOMP
  */
@@ -830,13 +825,6 @@ char *c_strdup(const char *s)
     return ret;
 }
 
-void do_print_name_ids()
-{
-    for (auto elem : name_ids) {
-        std::cout << elem.first << " " << elem.second << "\n";
-    }
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 
 void usage(const char *program)
@@ -866,10 +854,6 @@ void usage(const char *program)
               << "        controls whether the output is in a format suitable "
                  "for the model\n"
               << "        track of SMT-COMP (default: false)\n"
-              << "\n"
-              << "    -print-name-ids [true|false]\n"
-              << "        controls whether to print the renamings\n"
-              << "        (default: false)\n"
               << "\n"
               << "    -support-non-smtcomp [true|false]\n"
               << "        controls whether to support SMTLIB commands that are "
@@ -945,15 +929,6 @@ int main(int argc, char **argv)
                 usage(argv[0]);
             }
             i += 2;
-        } else if (strcmp(argv[i], "-print-name-ids") == 0 && i + 1 < argc) {
-            if (strcmp(argv[i + 1], "true") == 0) {
-                print_name_ids = true;
-            } else if (strcmp(argv[i + 1], "false") == 0) {
-                print_name_ids = false;
-            } else {
-                usage(argv[0]);
-            }
-            i += 2;
         } else if (strcmp(argv[i], "-support-non-smtcomp") == 0 &&
                    i + 1 < argc) {
             if (strcmp(argv[i + 1], "true") == 0) {
@@ -1015,8 +990,5 @@ int main(int argc, char **argv)
         print_scrambled(std::cout, keep_annotations);
     }
 
-    if (print_name_ids) {
-        do_print_name_ids();
-    }
     return 0;
 }
