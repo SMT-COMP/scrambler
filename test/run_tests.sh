@@ -39,6 +39,12 @@ runtest()
 [ -d "${TESTS_SMT_COMP_DIR}" ] || die "directory '${TESTS_SMT_COMP_DIR}' does not exist"
 [ -d "${TESTS_SMT_COMP_DIR}/expect" ] || die "directory '${TESTS_SMT_COMP_DIR}/expect' does not exist"
 
+[ -d "${TESTS_NON_SMT_COMP_DIR}" ] || die "directory '${TESTS_NON_SMT_COMP_DIR}' does not exist"
+[ -d "${TESTS_NON_SMT_COMP_DIR}/expect" ] || die "directory '${TESTS_NON_SMT_COMP_DIR}/expect' does not exist"
+
+[ -d "${TESTS_Z3_DIR}" ] || die "directory '${TESTS_Z3_DIR}' does not exist"
+[ -d "${TESTS_Z3_DIR}/expect" ] || die "directory '${TESTS_Z3_DIR}/expect' does not exist"
+
 echo "Run single-query/industry challenge track scrambler..."
 runtest "${TESTS_SMT_COMP_DIR}" "${SCRIPT_DIR}"/../process.single-query-challenge-track 0 single
 runtest "${TESTS_SMT_COMP_DIR}" "${SCRIPT_DIR}"/../process.single-query-challenge-track 1234 single
