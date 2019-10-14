@@ -5,6 +5,8 @@
 
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 TESTS_SMT_COMP_DIR="${SCRIPT_DIR}/smt-comp"
+TESTS_NON_SMT_COMP_DIR="${SCRIPT_DIR}/extensions/non-smtcomp"
+TESTS_Z3_DIR="${SCRIPT_DIR}/extensions/z3"
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 NOCOLOR='\033[0m'
@@ -37,6 +39,12 @@ runtest()
 [ -d "${TESTS_SMT_COMP_DIR}" ] || die "directory '${TESTS_SMT_COMP_DIR}' does not exist"
 [ -d "${TESTS_SMT_COMP_DIR}/expect" ] || die "directory '${TESTS_SMT_COMP_DIR}/expect' does not exist"
 
+[ -d "${TESTS_NON_SMT_COMP_DIR}" ] || die "directory '${TESTS_NON_SMT_COMP_DIR}' does not exist"
+[ -d "${TESTS_NON_SMT_COMP_DIR}/expect" ] || die "directory '${TESTS_NON_SMT_COMP_DIR}/expect' does not exist"
+
+[ -d "${TESTS_Z3_DIR}" ] || die "directory '${TESTS_Z3_DIR}' does not exist"
+[ -d "${TESTS_Z3_DIR}/expect" ] || die "directory '${TESTS_Z3_DIR}/expect' does not exist"
+
 echo "Run single-query/industry challenge track scrambler..."
 runtest "${TESTS_SMT_COMP_DIR}" "${SCRIPT_DIR}"/../process.single-query-challenge-track 0 single
 runtest "${TESTS_SMT_COMP_DIR}" "${SCRIPT_DIR}"/../process.single-query-challenge-track 1234 single
@@ -49,6 +57,13 @@ runtest "${TESTS_SMT_COMP_DIR}" "${SCRIPT_DIR}"/../process.unsat-core-track 1234
 echo -e "\nRun model-validation track scrambler..."
 runtest "${TESTS_SMT_COMP_DIR}" "${SCRIPT_DIR}"/../process.model-val-track 0 model-val
 runtest "${TESTS_SMT_COMP_DIR}" "${SCRIPT_DIR}"/../process.model-val-track 1234 model-val
+
+echo -e "\nRun non-SMTCOMP scrambler..."
+runtest ${TESTS_NON_SMT_COMP_DIR} ${SCRIPT_DIR}/../process.non-smtcomp 0 non-smtcomp
+runtest ${TESTS_NON_SMT_COMP_DIR} ${SCRIPT_DIR}/../process.non-smtcomp 1234 non-smtcomp
+echo -e "\nRun Z3 scrambler..."
+runtest ${TESTS_Z3_DIR} ${SCRIPT_DIR}/../process.z3 0 z3
+runtest ${TESTS_Z3_DIR} ${SCRIPT_DIR}/../process.z3 1234 z3
 
 if [ $exitcode -ne 0 ]
 then

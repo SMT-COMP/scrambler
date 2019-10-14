@@ -93,6 +93,7 @@ KEYWORD             :[a-zA-Z0-9._+\-*=%/?!$_~&^<>@]+
 "exit"           { return TK_EXIT; }
 "pop"            { return TK_POP; }
 "push"           { return TK_PUSH; }
+"reset"          { return TK_RESET; }
 "set-info"       { return TK_SET_INFO; }
 "set-logic"      { return TK_SET_LOGIC; }
 "set-option"     { return TK_SET_OPTION; }
@@ -100,6 +101,13 @@ KEYWORD             :[a-zA-Z0-9._+\-*=%/?!$_~&^<>@]+
 
 ":pattern"     { return TK_PATTERN; }
 ":named"       { return TK_NAMED; }
+
+":qid"         { return TK_QID; }
+":no-pattern"  { return TK_NOPATTERN; }
+":skolemid"    { return TK_SKOLEMID; }
+":lblpos"      { return TK_LBLPOS; }
+":lblneg"      { return TK_LBLNEG; }
+":weight"      { return TK_WEIGHT; }
 
 {NUMERAL}      { yylval.string = c_strdup(yytext); return NUMERAL; }
 {DECIMAL}      { yylval.string = c_strdup(yytext); return DECIMAL; }

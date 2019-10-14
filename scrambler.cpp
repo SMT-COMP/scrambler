@@ -88,6 +88,17 @@ bool gen_ucore = false;
  */
 bool gen_mval = false;
 
+/*
+ * If set to true, support SMTLIB files that have features not supported by
+ * SMTCOMP
+ */
+bool support_non_smtcomp = false;
+
+/*
+ * If set to true, support SMTLIB files that have Z3-specific features
+ */
+bool support_z3 = false;
+
 ////////////////////////////////////////////////////////////////////////////////
 
 /*
@@ -821,23 +832,38 @@ void usage(const char *program)
     std::cout << "Syntax: " << program << " [OPTIONS] < INPUT_FILE.smt2\n"
               << "\n"
               << "    -term_annot [true|false]\n"
-              << "        controls whether term annotations are printed (default: true)\n"
+              << "        controls whether term annotations are printed "
+                 "(default: true)\n"
               << "\n"
               << "    -seed N\n"
-              << "        seed value (>= 0) for pseudo-random choices; if 0, no scrambling is\n"
+              << "        seed value (>= 0) for pseudo-random choices; if 0, "
+                 "no scrambling is\n"
               << "        performed (default: time(0))\n"
               << "\n"
               << "    -core FILE\n"
-              << "        print only those (named) assertions whose name is contained in the\n"
+              << "        print only those (named) assertions whose name is "
+                 "contained in the\n"
               << "        specified FILE (default: print all assertions)\n"
               << "\n"
               << "    -gen-unsat-core [true|false]\n"
-              << "        controls whether the output is in a format suitable for the unsat-core\n"
+              << "        controls whether the output is in a format suitable "
+                 "for the unsat-core\n"
               << "        track of SMT-COMP (default: false)\n"
               << "\n"
               << "    -gen-model-val [true|false]\n"
-              << "        controls whether the output is in a format suitable for the model\n"
-              << "        track of SMT-COMP (default: false)\n";
+              << "        controls whether the output is in a format suitable "
+                 "for the model\n"
+              << "        track of SMT-COMP (default: false)\n"
+              << "\n"
+              << "    -support-non-smtcomp [true|false]\n"
+              << "        controls whether to support SMTLIB commands that are "
+                 "not supported\n"
+              << "        by SMTCOMP (default: false)\n"
+              << "\n"
+              << "    -support-z3 [true|false]\n"
+              << "        controls whether to support non-SMTLIB commands that "
+                 "are supported\n"
+              << "        by Z3 (default: false)\n";
     std::cout.flush();
     exit(1);
 }
@@ -899,6 +925,25 @@ int main(int argc, char **argv)
                 gen_mval = true;
             } else if (strcmp(argv[i + 1], "false") == 0) {
                 gen_mval = false;
+            } else {
+                usage(argv[0]);
+            }
+            i += 2;
+        } else if (strcmp(argv[i], "-support-non-smtcomp") == 0 &&
+                   i + 1 < argc) {
+            if (strcmp(argv[i + 1], "true") == 0) {
+                support_non_smtcomp = true;
+            } else if (strcmp(argv[i + 1], "false") == 0) {
+                support_non_smtcomp = false;
+            } else {
+                usage(argv[0]);
+            }
+            i += 2;
+        } else if (strcmp(argv[i], "-support-z3") == 0 && i + 1 < argc) {
+            if (strcmp(argv[i + 1], "true") == 0) {
+                support_z3 = true;
+            } else if (strcmp(argv[i + 1], "false") == 0) {
+                support_z3 = false;
             } else {
                 usage(argv[0]);
             }
