@@ -858,7 +858,7 @@ void usage(const char *program)
               << "    -gen-model-val [true|false]\n"
               << "        controls whether the output is in a format suitable "
                  "for the model\n"
-              << "        track of SMT-COMP (default: false)\n"
+              << "        validation track of SMT-COMP (default: false)\n"
               << "\n"
               << "    -support-non-smtcomp [true|false]\n"
               << "        controls whether to support SMTLIB commands that are "
@@ -869,12 +869,10 @@ void usage(const char *program)
               << "        controls whether to support non-SMTLIB commands that "
                  "are supported\n"
               << "        by Z3 (default: false)\n"
-              << "        controls whether the output is in a format suitable for the model\n"
-              << "        track of SMT-COMP (default: false)\n"
               << "\n"
-              << "    -count-asrts [true|false]\n"
+              << "    -count-asserts [true|false]\n"
               << "        controls whether the number of assertions found in the benchmark\n"
-              << "        is printed to stderr (default: false)\n";
+              << "        is printed to stderr (default: false)\n\n";
     std::cout.flush();
     exit(1);
 }
@@ -955,9 +953,11 @@ int main(int argc, char **argv)
                 support_z3 = true;
             } else if (strcmp(argv[i + 1], "false") == 0) {
                 support_z3 = false;
+            } else {
+                usage(argv[0]);
             }
             i += 2;
-        } else if (strcmp(argv[i], "-count-asrts") == 0 && i + 1 < argc) {
+        } else if (strcmp(argv[i], "-count-asserts") == 0 && i + 1 < argc) {
             if (strcmp(argv[i + 1], "true") == 0) {
                 count_asrts = true;
             } else if (strcmp(argv[i + 1], "false") == 0) {
