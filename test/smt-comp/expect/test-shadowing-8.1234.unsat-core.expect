@@ -1,3 +1,4 @@
+(set-option :print-success false)
 (set-option :produce-unsat-cores true)
 (set-logic ALL)
 (define-fun x2 ((x1 Int) (x1 Int)) Bool (= x1 x1))

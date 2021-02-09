@@ -1,3 +1,4 @@
+(set-option :print-success false)
 (set-logic ALL)
 (push 1)
 (declare-fun x1 () Bool)

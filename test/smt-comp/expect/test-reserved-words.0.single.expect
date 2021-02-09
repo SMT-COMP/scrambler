@@ -1,3 +1,4 @@
+(set-option :print-success false)
 (set-logic ALL)
 (declare-fun |BINARY| () Bool)
 (declare-fun |DECIMAL| () Bool)
