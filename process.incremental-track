@@ -12,4 +12,4 @@
 grep -o "(set-info :status \(sat\|unsat\|unknown\))" "$1"|sed 's/(set-info :status \(.*\))/\1/'
 echo "--- BENCHMARK BEGINS HERE ---"
 ulimit -s 131072
-./scrambler -seed "$2" < "$1"
+./scrambler -incremental true -seed "$2" < "$1"

@@ -1,3 +1,4 @@
+(set-option :print-success false)
 (set-logic AUFBVDTNIRA)
 (assert true)
 (check-sat)

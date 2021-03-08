@@ -2,6 +2,7 @@
  *
  * A simple scrambler for SMT-LIB 2.6 scripts
  *
+ * Copyright (C) 2021 Jochen Hoenicke
  * Copyright (C) 2018-2019 Aina Niemetz
  * Copyright (C) 2015-2018 Tjark Weber
  * Copyright (C) 2011 Alberto Griggio
@@ -71,6 +72,12 @@ size_t next_rand_int(size_t upper_bound)
  * assertions, permutation of names, etc.) will not be applied.
  */
 bool no_scramble = false;
+
+/*
+ * If *not* set to true, the following modifications will be made additionally:
+ * 1. The command (set-option :print-success false) is prepended.
+ */
+bool gen_incremental = false;
 
 /*
  * If set to true, the following modifications will be made additionally:
@@ -850,6 +857,11 @@ void usage(const char *program)
                  "contained in the\n"
               << "        specified FILE (default: print all assertions)\n"
               << "\n"
+              << "    -incremental [true|false]\n"
+              << "        produce output in a format suitable for the trace "
+                 "executer used in\n"
+              << "        the incremental track of SMT-COMP (default: false)\n"
+              << "\n"
               << "    -gen-unsat-core [true|false]\n"
               << "        controls whether the output is in a format suitable "
                  "for the unsat-core\n"
@@ -920,6 +932,15 @@ int main(int argc, char **argv)
             create_core = true;
             core_file = argv[i+1];
             i += 2;
+        } else if (strcmp(argv[i], "-incremental") == 0 && i + 1 < argc) {
+            if (strcmp(argv[i + 1], "true") == 0) {
+                gen_incremental = true;
+            } else if (strcmp(argv[i + 1], "false") == 0) {
+                gen_incremental = false;
+            } else {
+                usage(argv[0]);
+            }
+            i += 2;
         } else if (strcmp(argv[i], "-gen-unsat-core") == 0 && i + 1 < argc) {
             if (strcmp(argv[i + 1], "true") == 0) {
                 gen_ucore = true;
@@ -978,6 +999,12 @@ int main(int argc, char **argv)
             std::cerr << "ERROR parsing core names from " << core_file << std::endl;
             return 1;
         }
+    }
+
+    if (!gen_incremental && !count_asrts) {
+        // prepend SMT-LIB command that suppresses success for non-incremental
+        // tracks
+        std::cout << "(set-option :print-success false)" << std::endl;
     }
 
     if (gen_ucore) {

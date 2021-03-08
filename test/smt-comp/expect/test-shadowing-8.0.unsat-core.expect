@@ -1,3 +1,4 @@
+(set-option :print-success false)
 (set-option :produce-unsat-cores true)
 (set-logic ALL)
 (define-fun x ((y Int) (y Int)) Bool (= y y))

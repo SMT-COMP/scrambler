@@ -1,3 +1,4 @@
+(set-option :print-success false)
 (set-logic ALL)
 (set-option :print-success false)
 (declare-fun x1 () Bool)

@@ -1,3 +1,4 @@
+(set-option :print-success false)
 (set-logic ALL)
 (check-sat)
 (exit)
