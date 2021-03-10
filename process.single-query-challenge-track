@@ -7,4 +7,4 @@
 # $2: seed
 
 ulimit -s 131072
-./scrambler -seed "$2" < "$1"
+./scrambler -term_annot pattern -seed "$2" < "$1"

@@ -67,6 +67,14 @@ size_t next_rand_int(size_t upper_bound)
 
 ////////////////////////////////////////////////////////////////////////////////
 
+/* The different modes for term_annot:
+ *  all:     keep all term annotations.
+ *  pattern: keep pattern annotations, strip named annotations.
+ *  none:    remove all term annotations.
+ */
+enum annotation_mode { none, pattern, all };
+
+
 /*
  * If set to true, many of the scrambling transformations (e.g., shuffling of
  * assertions, permutation of names, etc.) will not be applied.
@@ -586,9 +594,19 @@ std::string make_annotation_name()
     return tmp.str();
 }
 
-void print_node(std::ostream &out, const scrambler::node *n, bool keep_annotations)
+static bool keep_annotation(const scrambler::node *n, annotation_mode keep_annotations) {
+    if (keep_annotations == none)
+        return false;
+    if (keep_annotations == all)
+        return true;
+    assert(keep_annotations == pattern);
+    return n->children.size() == 2 && n->children[1]->symbol == ":pattern";
+}
+
+void print_node(std::ostream &out, const scrambler::node *n, annotation_mode keep_annotations)
 {
-    if (!no_scramble && !keep_annotations && n->symbol == "!") {
+    if (!no_scramble && n->symbol == "!" &&
+        !keep_annotation(n, keep_annotations)) {
         print_node(out, n->children[0], keep_annotations);
     } else {
         if (n->needs_parens) {
@@ -638,13 +656,13 @@ void print_node(std::ostream &out, const scrambler::node *n, bool keep_annotatio
     }
 }
 
-void print_command(std::ostream &out, const scrambler::node *n, bool keep_annotations)
+void print_command(std::ostream &out, const scrambler::node *n, annotation_mode keep_annotations)
 {
     print_node(out, n, keep_annotations);
     out << std::endl;
 }
 
-void print_scrambled(std::ostream &out, bool keep_annotations)
+void print_scrambled(std::ostream &out, annotation_mode keep_annotations)
 {
     if (!no_scramble) {
         // identify consecutive declarations and shuffle them
@@ -805,6 +823,9 @@ std::string get_named_annot(scrambler::node *root)
     return "";
 }
 
+// Used by the post-processor in the unsat core track to filter the
+// assertions and only keep those that appear in the unsat core.
+// The string set `to_keep` lists all names that should be kept.
 void filter_named(const StringSet &to_keep)
 {
     size_t i, k;
@@ -843,7 +864,7 @@ void usage(const char *program)
 {
     std::cout << "Syntax: " << program << " [OPTIONS] < INPUT_FILE.smt2\n"
               << "\n"
-              << "    -term_annot [true|false]\n"
+              << "    -term_annot [true|pattern|false]\n"
               << "        controls whether term annotations are printed "
                  "(default: true)\n"
               << "\n"
@@ -897,7 +918,7 @@ using namespace scrambler;
 
 int main(int argc, char **argv)
 {
-    bool keep_annotations = true;
+    annotation_mode keep_annotations = all;
 
     bool create_core = false;
     std::string core_file;
@@ -921,9 +942,11 @@ int main(int argc, char **argv)
             i += 2;
         } else if (strcmp(argv[i], "-term_annot") == 0 && i+1 < argc) {
             if (strcmp(argv[i+1], "true") == 0) {
-                keep_annotations = true;
+                keep_annotations = all;
+            } else if (strcmp(argv[i+1], "pattern") == 0) {
+                keep_annotations = pattern;
             } else if (strcmp(argv[i+1], "false") == 0) {
-                keep_annotations = false;
+                keep_annotations = none;
             } else {
                 usage(argv[0]);
             }
