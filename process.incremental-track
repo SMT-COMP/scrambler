@@ -11,5 +11,5 @@
 # is expected by the trace executor
 grep -o "(set-info :status \(sat\|unsat\|unknown\))" "$1"|sed 's/(set-info :status \(.*\))/\1/'
 echo "--- BENCHMARK BEGINS HERE ---"
-ulimit -s 131072
+ulimit -s 1048576
 ./scrambler -term_annot pattern -incremental true -seed "$2" < "$1"

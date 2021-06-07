@@ -16,7 +16,7 @@ printing, which recurses over each term's parse tree.) The default stack
 size of 8192 KB on Linux systems is sufficient for terms with a depth of
 about 80,000. Some benchmarks in SMT-LIB do contain more deeply nested
 terms. To process such benchmarks, the stack limit needs to be increased
-(using, e.g., `ulimit -s 131072) before the scrambler is invoked. Otherwise,
+(using, e.g., `ulimit -s 1048576) before the scrambler is invoked. Otherwise,
 the scrambler may cause a segmentation fault.
 
 
@@ -26,7 +26,7 @@ the scrambler may cause a segmentation fault.
 
 See [process.single-query-challenge-track](process.single-query-challenge-track).
 ```
-ulimit -s 131072
+ulimit -s 1048576
 ./scrambler -seed <seed> < <benchmark>
 ```
 
@@ -40,7 +40,7 @@ See [process.incremental-track](process.incremental-track).
 # is expected by the trace executor
 grep 'set-info :status' "$1"|sed 's/(set-info :status \(.*\))/\1/'
 echo "--- BENCHMARK BEGINS HERE ---"
-ulimit -s 131072
+ulimit -s 1048576
 ./scrambler -seed <seed> < <benchmark>
 ```
 
@@ -49,7 +49,7 @@ ulimit -s 131072
 See [process.model-val-track](process.model-val-track).
 
 ```
-ulimit -s 131072
+ulimit -s 1048576
 ./scrambler -seed <seed> -gen-model-val true < <benchmark>
 ```
 
@@ -58,6 +58,6 @@ ulimit -s 131072
 See [process.unsat-core-track](process.unsat-core-track).
 
 ```
-ulimit -s 131072
+ulimit -s 1048576
 ./scrambler -seed <seed> -gen-unsat-core true < <benchmark>
 ```

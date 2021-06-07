@@ -6,5 +6,5 @@
 # $1: benchmark filename
 # $2: seed
 
-ulimit -s 131072
+ulimit -s 1048576
 ./scrambler -term_annot pattern -seed "$2" < "$1"
