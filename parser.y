@@ -395,12 +395,16 @@ cmd_set_logic : '(' TK_SET_LOGIC SYMBOL ')'
 ;
 
 // set-option commands are not allowed in SMT-COMP; we need to be able
-// to parse "(set-option :produce-unsat-cores true)" for the unsat-
-// core track only
+// to parse "(set-option :produce-unsat-cores true)" and
+// "(set-option :print-success false)" for the unsat-core track.
 cmd_set_option : '(' TK_SET_OPTION KEYWORD attribute_value ')'
   {
       if (!support_non_smtcomp) {
-          if (strcmp($3, ":produce-unsat-cores") != 0 || $4->symbol != "true") {
+          if (strcmp($3, ":print-success") == 0 && $4->symbol == "false") {
+            // ignore :print-success false
+          } else if (strcmp($3, ":produce-unsat-cores") == 0 && $4->symbol == "true") {
+            // ignore :produce-unsat-cores true
+          } else {
             // not allowed in SMT-COMP
             yyerror("Encountered non-SMT-COMP command: 'set-option'. Maybe you "
                     "want to re-run with '-support-non-smtcomp true'.");
