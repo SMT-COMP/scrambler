@@ -294,7 +294,7 @@ node *make_name_node(const char* s, node *n1)
         ret->needs_parens = true;
     }
     return ret;
-}   
+}
 
 void del_node(node *n)
 {
@@ -472,7 +472,7 @@ int is_commutative(const node *n)
         if (s == "fp.eq") {
             return 0;
         }
-        if (s == "fp.add" || s == "fp.mul") { 
+        if (s == "fp.add" || s == "fp.mul") {
             return 1;
         }
     }
@@ -605,8 +605,7 @@ static bool keep_annotation(const scrambler::node *n, annotation_mode keep_annot
 
 void print_node(std::ostream &out, const scrambler::node *n, annotation_mode keep_annotations)
 {
-    if (!no_scramble && n->symbol == "!" &&
-        !keep_annotation(n, keep_annotations)) {
+    if (n->symbol == "!" && !keep_annotation(n, keep_annotations)) {
         print_node(out, n->children[0], keep_annotations);
     } else {
         if (n->needs_parens) {
