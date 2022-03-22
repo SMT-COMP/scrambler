@@ -104,6 +104,13 @@ bool gen_ucore = false;
 bool gen_mval = false;
 
 /*
+ * If set to true, the following modifications will be made additionally:
+ * 1. The command (set-option :produce-proofs true) will be prepended.
+ * 2. A (get-proof) command will be inserted after each (check-sat) command.
+ */
+bool gen_proof = false;
+
+/*
  * If set to true, support SMTLIB files that have features not supported by
  * SMTCOMP
  */
@@ -647,9 +654,14 @@ void print_node(std::ostream &out, const scrambler::node *n, annotation_mode kee
             if (gen_ucore) {
                 // insert (get-unsat-core) after each check-sat
                 out << std::endl << "(get-unsat-core)";
-            } else if (gen_mval) {
+            }
+	    if (gen_mval) {
                 // insert (get-model) after each check-sat
                 out << std::endl << "(get-model)";
+            }
+	    if (gen_proof) {
+                // insert (get-proof) after each check-sat
+                out << std::endl << "(get-proof)";
             }
         }
     }
@@ -892,6 +904,11 @@ void usage(const char *program)
                  "for the model\n"
               << "        validation track of SMT-COMP (default: false)\n"
               << "\n"
+              << "    -gen-proof [true|false]\n"
+              << "        controls whether the output is in a format suitable "
+                 "for the proof\n"
+              << "        track of SMT-COMP (default: false)\n"
+              << "\n"
               << "    -support-non-smtcomp [true|false]\n"
               << "        controls whether to support SMTLIB commands that are "
                  "not supported\n"
@@ -981,6 +998,15 @@ int main(int argc, char **argv)
                 usage(argv[0]);
             }
             i += 2;
+        } else if (strcmp(argv[i], "-gen-proof") == 0 && i + 1 < argc) {
+            if (strcmp(argv[i + 1], "true") == 0) {
+                gen_proof = true;
+            } else if (strcmp(argv[i + 1], "false") == 0) {
+                gen_proof = false;
+            } else {
+                usage(argv[0]);
+            }
+            i += 2;
         } else if (strcmp(argv[i], "-support-non-smtcomp") == 0 &&
                    i + 1 < argc) {
             if (strcmp(argv[i + 1], "true") == 0) {
@@ -1037,6 +1063,11 @@ int main(int argc, char **argv)
     if (gen_mval) {
         // prepend SMT-LIB command that enables production of models
         std::cout << "(set-option :produce-models true)" << std::endl;
+    }
+
+    if (gen_proof) {
+        // prepend SMT-LIB command that enables production of models
+        std::cout << "(set-option :produce-proofs true)" << std::endl;
     }
 
     if (count_asrts) {

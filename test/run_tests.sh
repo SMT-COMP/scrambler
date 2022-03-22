@@ -63,6 +63,9 @@ runtest "${TESTS_SMT_COMP_DIR}" "${SCRIPT_DIR}"/../process.unsat-core-track 1234
 echo -e "\nRun model-validation track scrambler..."
 runtest "${TESTS_SMT_COMP_DIR}" "${SCRIPT_DIR}"/../process.model-val-track 0 model-val
 runtest "${TESTS_SMT_COMP_DIR}" "${SCRIPT_DIR}"/../process.model-val-track 1234 model-val
+echo -e "\nRun proof track scrambler..."
+runtest "${TESTS_SMT_COMP_DIR}" "${SCRIPT_DIR}"/../process.proof-track 0 proof
+runtest "${TESTS_SMT_COMP_DIR}" "${SCRIPT_DIR}"/../process.proof-track 1234 proof
 
 
 echo -e "\nRun non-SMTCOMP scrambler..."
