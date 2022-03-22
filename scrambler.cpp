@@ -655,11 +655,11 @@ void print_node(std::ostream &out, const scrambler::node *n, annotation_mode kee
                 // insert (get-unsat-core) after each check-sat
                 out << std::endl << "(get-unsat-core)";
             }
-	    if (gen_mval) {
+            if (gen_mval) {
                 // insert (get-model) after each check-sat
                 out << std::endl << "(get-model)";
             }
-	    if (gen_proof) {
+            if (gen_proof) {
                 // insert (get-proof) after each check-sat
                 out << std::endl << "(get-proof)";
             }
