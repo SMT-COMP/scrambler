@@ -343,20 +343,20 @@ cmd_exit : '(' TK_EXIT ')'
 
 cmd_pop : '(' TK_POP NUMERAL ')'
   {
-      if (atoi($3) != 1) {
-          yyerror("pop with numeral != 1"); // not allowed in SMT-COMP
+      // pop N is not allowed in SMT-COMP; rewrite it to repeated pop 1.
+      for (int i = atoi($3); i > 0; i--) {
+          add_node("pop", make_node("1"));
       }
-      add_node("pop", make_node($3));
       free($3);
   }
 ;
 
 cmd_push : '(' TK_PUSH NUMERAL ')'
   {
-      if (atoi($3) != 1) {
-          yyerror("push with numeral != 1"); // not allowed in SMT-COMP
+      // push N is not allowed in SMT-COMP; rewrite it to repeated push 1.
+      for (int i = atoi($3); i > 0; i--) {
+          add_node("push", make_node("1"));
       }
-      add_node("push", make_node($3));
       free($3);
   }
 ;
