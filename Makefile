@@ -1,3 +1,5 @@
+YEAR=2022
+
 CXX = g++ -D_GLIBCXX_USE_CXX11_ABI=0 -std=c++11
 CXXFLAGS = -g -O3
 LDFLAGS = -g
@@ -7,10 +9,11 @@ OBJECTS = scrambler.o \
 	  lexer.o
 
 PREPROCESSORS = \
-	SMT-COMP-2021-single-query-scrambler.tar.gz \
-	SMT-COMP-2021-incremental-scrambler.tar.gz \
-	SMT-COMP-2021-unsat-core-scrambler.tar.gz \
-	SMT-COMP-2021-model-validation-scrambler.tar.gz
+	SMT-COMP-$(YEAR)-single-query-scrambler.tar.gz \
+	SMT-COMP-$(YEAR)-incremental-scrambler.tar.gz \
+	SMT-COMP-$(YEAR)-unsat-core-scrambler.tar.gz \
+	SMT-COMP-$(YEAR)-model-validation-scrambler.tar.gz \
+	SMT-COMP-$(YEAR)-proof-scrambler.tar.gz
 
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
@@ -31,23 +34,28 @@ test: scrambler
 
 # targets to prepare StarExec preprocessors
 
-SMT-COMP-2021-single-query-scrambler.tar.gz: scrambler
+SMT-COMP-$(YEAR)-single-query-scrambler.tar.gz: scrambler
 	cp process.single-query-challenge-track process
 	tar -czf $@ process scrambler
 	rm process
 
-SMT-COMP-2021-incremental-scrambler.tar.gz: scrambler
+SMT-COMP-$(YEAR)-incremental-scrambler.tar.gz: scrambler
 	cp process.incremental-track process
 	tar -czf $@ process scrambler
 	rm process
 
-SMT-COMP-2021-unsat-core-scrambler.tar.gz: scrambler
+SMT-COMP-$(YEAR)-unsat-core-scrambler.tar.gz: scrambler
 	cp process.unsat-core-track process
 	tar -czf $@ process scrambler
 	rm process
 
-SMT-COMP-2021-model-validation-scrambler.tar.gz: scrambler
+SMT-COMP-$(YEAR)-model-validation-scrambler.tar.gz: scrambler
 	cp process.model-val-track process
+	tar -czf $@ process scrambler
+	rm process
+
+SMT-COMP-$(YEAR)-proof-scrambler.tar.gz: scrambler
+	cp process.proof-track process
 	tar -czf $@ process scrambler
 	rm process
 
