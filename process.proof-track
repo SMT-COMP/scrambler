@@ -1,0 +1,10 @@
+#!/bin/sh
+
+# This is a wrapper script that allows the scrambler to be used as a
+# preprocessor (for the proof track of SMT-COMP) on StarExec.
+
+# $1: benchmark filename
+# $2: seed
+
+ulimit -s 1048576
+./scrambler -term_annot pattern -seed "$2" -gen-proof true < "$1"
